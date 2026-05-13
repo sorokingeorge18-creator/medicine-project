@@ -444,9 +444,14 @@ export default function App() {
           </div>
         )}
 
-        {/* ── Режим документов: список + предпросмотр ────────────────────── */}
+        {/* ── Режим документов: предпросмотр + список ────────────────────── */}
         {isDocMode && (
           <>
+            {/* Предпросмотр */}
+            <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+              <DocumentPreview document={selectedDocument} onUpdate={handleDocumentUpdate} />
+            </div>
+
             {/* Список документов */}
             <div className="w-64 shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between px-4 pt-4 pb-2">
@@ -472,11 +477,6 @@ export default function App() {
                   onSelect={setSelectedDocId}
                 />
               </div>
-            </div>
-
-            {/* Предпросмотр */}
-            <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
-              <DocumentPreview document={selectedDocument} onUpdate={handleDocumentUpdate} />
             </div>
           </>
         )}
