@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FormData, DiaryEntry, SavedCase } from './types';
 import { PatientForm } from './components/forms/PatientForm';
 import { DiagnosisForm } from './components/forms/DiagnosisForm';
@@ -117,6 +117,51 @@ function saveCases(cases: SavedCase[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
 }
 
+// ─── Анимированный контент ────────────────────────────────────────────────────
+
+/**
+ * Оборачивает children в div с fade+slide анимацией при смене ключа.
+ */
+const AnimatedPane: React.FC<{ tabKey: string; children: React.ReactNode }> = ({ tabKey, children }) => {
+  const [visible, setVisible] = useState(false);
+  const [content, setContent] = useState(children);
+  const [currentKey, setCurrentKey] = useState(tabKey);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (tabKey === currentKey) {
+      setVisible(true);
+      return;
+    }
+    // Fade out, swap content, fade in
+    setVisible(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setContent(children);
+      setCurrentKey(tabKey);
+      setVisible(true);
+    }, 180);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [tabKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep content in sync when same tab re-renders
+  useEffect(() => {
+    if (tabKey === currentKey) setContent(children);
+  });
+
+  return (
+    <div
+      style={{
+        transition: 'opacity 0.18s ease, transform 0.18s ease',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(6px)',
+      }}
+    >
+      {content}
+    </div>
+  );
+};
+
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
 export default function App() {
@@ -226,7 +271,8 @@ export default function App() {
   const isDocMode = activeTab === 'documents';
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
+    <div className="min-h-screen bg-gray-100 font-sans flex flex-col">
+
       {/* ── Шапка ─────────────────────────────────────────────────────────── */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -290,9 +336,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Уведомление об успехе ────────────────────────────────────────── */}
+      {/* ── Уведомление об успехе ─────────────────────────────────────────── */}
       {successMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 animate-fade-in">
+        <div className="fixed bottom-6 right-6 z-50 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -302,7 +348,7 @@ export default function App() {
 
       {/* ── Ошибки ───────────────────────────────────────────────────────── */}
       {showErrors && errors.length > 0 && (
-        <div className="max-w-screen-2xl mx-auto px-4 mt-3">
+        <div className="max-w-screen-2xl mx-auto px-4 mt-3 w-full">
           <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
             <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -323,12 +369,12 @@ export default function App() {
       )}
 
       {/* ── Основной контент ─────────────────────────────────────────────── */}
-      <div className="max-w-screen-2xl mx-auto px-4 py-4 flex gap-4">
+      <div className="flex-1 max-w-screen-2xl mx-auto w-full px-4 py-4 flex gap-4 min-h-0">
 
-        {/* Боковая панель сохранённых случаев */}
+        {/* Панель сохранённых случаев */}
         {showSavedCases && (
-          <aside className="w-72 shrink-0">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+          <aside className="w-64 shrink-0">
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 h-full">
               <h2 className="text-sm font-semibold text-gray-800 mb-3">Сохранённые случаи</h2>
               <SavedCases
                 cases={savedCases}
@@ -341,46 +387,70 @@ export default function App() {
           </aside>
         )}
 
-        {/* Левая колонка */}
-        <div className={`flex flex-col gap-4 ${isDocMode ? 'w-72 shrink-0' : 'flex-1'}`}>
+        {/* ── Левый сайдбар: вертикальные табы ──────────────────────────── */}
+        <nav className="w-44 shrink-0 flex flex-col gap-1">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const isDoc = tab.id === 'documents';
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left
+                  transition-all duration-200 w-full
+                  ${isActive
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : isDoc && hasDocuments
+                      ? 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-800'
+                  }
+                `}
+              >
+                <span className="text-base leading-none">{tab.icon}</span>
+                <span>{tab.label}</span>
+                {isDoc && hasDocuments && !isActive && (
+                  <span className="ml-auto bg-blue-100 text-blue-600 text-xs font-semibold px-1.5 py-0.5 rounded-full">
+                    {diaries.length + (preopEpicrisis ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+            );
+          })}
 
-          {/* Табы */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex overflow-x-auto">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition flex-1 justify-center ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600 bg-blue-50'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </button>
-              ))}
-            </div>
+          {/* Статус заполнения */}
+          <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+            <StatusDot label="Пациент" ok={!!(formData.patient.lastName && formData.patient.admissionDate && formData.patient.operationDate)} />
+            <StatusDot label="Диагноз" ok={!!(formData.diagnosis.mainDiagnosis && formData.diagnosis.anatomicalArea)} />
+            <StatusDot label="Обследования" ok={!!formData.examination.xrayDescription} />
+            <StatusDot label="Операция" ok={!!formData.operation.operationVolume} />
+            <StatusDot label="Врачи" ok={!!(formData.doctors.attendingName && formData.doctors.headName)} />
           </div>
+        </nav>
 
-          {/* Содержимое таба-формы */}
-          {!isDocMode && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-              {activeTab === 'patient' && <PatientForm data={formData.patient} onChange={updatePatient} />}
-              {activeTab === 'diagnosis' && <DiagnosisForm data={formData.diagnosis} onChange={updateDiagnosis} />}
-              {activeTab === 'examination' && <ExaminationForm data={formData.examination} onChange={updateExamination} />}
-              {activeTab === 'operation' && <OperationForm data={formData.operation} onChange={updateOperation} />}
-              {activeTab === 'immobilization' && <ImmobilizationForm data={formData.immobilization} onChange={updateImmobilization} />}
-              {activeTab === 'doctors' && <DoctorsForm data={formData.doctors} onChange={updateDoctors} />}
-            </div>
-          )}
+        {/* ── Центральная панель ─────────────────────────────────────────── */}
+        {!isDocMode && (
+          <div className="flex-1 min-w-0">
+            <AnimatedPane tabKey={activeTab}>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+                {activeTab === 'patient' && <PatientForm data={formData.patient} onChange={updatePatient} />}
+                {activeTab === 'diagnosis' && <DiagnosisForm data={formData.diagnosis} onChange={updateDiagnosis} />}
+                {activeTab === 'examination' && <ExaminationForm data={formData.examination} onChange={updateExamination} />}
+                {activeTab === 'operation' && <OperationForm data={formData.operation} onChange={updateOperation} />}
+                {activeTab === 'immobilization' && <ImmobilizationForm data={formData.immobilization} onChange={updateImmobilization} />}
+                {activeTab === 'doctors' && <DoctorsForm data={formData.doctors} onChange={updateDoctors} />}
+              </div>
+            </AnimatedPane>
+          </div>
+        )}
 
-          {/* Список документов */}
-          {isDocMode && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex-1">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-800">Список документов</h2>
+        {/* ── Режим документов: список + предпросмотр ────────────────────── */}
+        {isDocMode && (
+          <>
+            {/* Список документов */}
+            <div className="w-64 shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                <h2 className="text-sm font-semibold text-gray-800">Документы</h2>
                 {hasDocuments && (
                   <button
                     onClick={handleExport}
@@ -394,61 +464,30 @@ export default function App() {
                   </button>
                 )}
               </div>
-              <DocumentList
-                diaries={diaries}
-                preopEpicrisis={preopEpicrisis}
-                selectedId={selectedDocId}
-                onSelect={setSelectedDocId}
-              />
+              <div className="px-3 pb-4 flex-1 overflow-y-auto">
+                <DocumentList
+                  diaries={diaries}
+                  preopEpicrisis={preopEpicrisis}
+                  selectedId={selectedDocId}
+                  onSelect={setSelectedDocId}
+                />
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Предпросмотр (только в режиме документов) */}
-        {isDocMode && (
-          <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-w-0">
-            <DocumentPreview document={selectedDocument} onUpdate={handleDocumentUpdate} />
-          </div>
+            {/* Предпросмотр */}
+            <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+              <DocumentPreview document={selectedDocument} onUpdate={handleDocumentUpdate} />
+            </div>
+          </>
         )}
       </div>
-
-      {/* ── Нижняя строка статуса ────────────────────────────────────────── */}
-      {!isDocMode && (
-        <div className="max-w-screen-2xl mx-auto px-4 pb-6">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-4 flex-wrap">
-                <StatusDot label="Пациент" ok={!!(formData.patient.lastName && formData.patient.admissionDate && formData.patient.operationDate)} />
-                <StatusDot label="Диагноз" ok={!!(formData.diagnosis.mainDiagnosis && formData.diagnosis.anatomicalArea)} />
-                <StatusDot label="Обследования" ok={!!formData.examination.xrayDescription} />
-                <StatusDot label="Операция" ok={!!formData.operation.operationVolume} />
-                <StatusDot label="Врачи" ok={!!(formData.doctors.attendingName && formData.doctors.headName)} />
-              </div>
-              <div className="flex gap-2">
-                {TABS.filter((t) => t.id !== 'documents').map((tab, i, arr) => {
-                  const cur = arr.findIndex((t) => t.id === activeTab);
-                  if (i === cur - 1 || i === cur + 1) {
-                    return (
-                      <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                        className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition">
-                        {i < cur ? `← ${tab.label}` : `${tab.label} →`}
-                      </button>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 const StatusDot: React.FC<{ label: string; ok: boolean }> = ({ label, ok }) => (
   <div className="flex items-center gap-1.5">
-    <div className={`w-2 h-2 rounded-full ${ok ? 'bg-green-500' : 'bg-gray-300'}`} />
-    <span className={`text-xs ${ok ? 'text-green-700' : 'text-gray-400'}`}>{label}</span>
+    <div className={`w-2 h-2 rounded-full shrink-0 transition-colors duration-300 ${ok ? 'bg-green-500' : 'bg-gray-300'}`} />
+    <span className={`text-xs transition-colors duration-300 ${ok ? 'text-green-700' : 'text-gray-400'}`}>{label}</span>
   </div>
 );
