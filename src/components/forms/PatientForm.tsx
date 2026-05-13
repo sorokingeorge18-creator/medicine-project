@@ -169,20 +169,17 @@ export const PatientForm: React.FC<Props> = ({ data, onChange }) => {
           value={data.lastName}
           onChange={(v) => update('lastName', v)}
           required
-          placeholder="Голышева"
         />
         <InputField
           label="Имя"
           value={data.firstName}
           onChange={(v) => update('firstName', v)}
           required
-          placeholder="Раиса"
         />
         <InputField
           label="Отчество"
           value={data.middleName}
           onChange={(v) => update('middleName', v)}
-          placeholder="Ивановна"
         />
       </div>
 
