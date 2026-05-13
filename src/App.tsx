@@ -59,18 +59,39 @@ const INITIAL_FORM: FormData = {
   },
 };
 
-// ─── Табы ────────────────────────────────────────────────────────────────────
+// ─── Типы и константы ────────────────────────────────────────────────────────
 
 type TabId = 'patient' | 'diagnosis' | 'examination' | 'operation' | 'immobilization' | 'doctors' | 'documents';
 
-const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: 'patient', label: 'Пациент', icon: '👤' },
-  { id: 'diagnosis', label: 'Диагноз', icon: '🏥' },
-  { id: 'examination', label: 'Обследования', icon: '🔬' },
-  { id: 'operation', label: 'Операция', icon: '⚕️' },
-  { id: 'immobilization', label: 'Фиксация', icon: '🩹' },
-  { id: 'doctors', label: 'Врачи', icon: '👨‍⚕️' },
-  { id: 'documents', label: 'Документы', icon: '📄' },
+const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
+  {
+    id: 'patient', label: 'Пациент',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 shrink-0"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c0-2.76 2.24-5 5-5s5 2.24 5 5" strokeLinecap="round"/></svg>,
+  },
+  {
+    id: 'diagnosis', label: 'Диагноз',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 shrink-0"><rect x="3" y="1.5" width="10" height="13" rx="1.5"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" strokeLinecap="round"/></svg>,
+  },
+  {
+    id: 'examination', label: 'Обследования',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 shrink-0"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3 3" strokeLinecap="round"/></svg>,
+  },
+  {
+    id: 'operation', label: 'Операция',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 shrink-0"><circle cx="8" cy="8" r="6"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>,
+  },
+  {
+    id: 'immobilization', label: 'Фиксация',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 shrink-0"><path d="M4 8a4 4 0 018 0" strokeLinecap="round"/><path d="M2.5 10.5l2-1.5M2.5 5.5l2 1.5M13.5 10.5l-2-1.5M13.5 5.5l-2 1.5" strokeLinecap="round"/></svg>,
+  },
+  {
+    id: 'doctors', label: 'Врачи',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 shrink-0"><circle cx="5.5" cy="5" r="2"/><path d="M1.5 13c0-2.21 1.79-4 4-4s4 1.79 4 4" strokeLinecap="round"/><circle cx="11.5" cy="5.5" r="1.5"/><path d="M10 13c0-.93.27-1.8.74-2.52" strokeLinecap="round"/></svg>,
+  },
+  {
+    id: 'documents', label: 'Документы',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 shrink-0"><path d="M3 3.5A1.5 1.5 0 014.5 2h4.69L12 5v7.5A1.5 1.5 0 0110.5 14h-6A1.5 1.5 0 013 12.5v-9z"/><path d="M9 2v3.5H12M5.5 8h5M5.5 10.5h3.5" strokeLinecap="round"/></svg>,
+  },
 ];
 
 // ─── Валидация ───────────────────────────────────────────────────────────────
@@ -78,7 +99,6 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
 function validateForm(data: FormData): string[] {
   const errors: string[] = [];
   const { patient, diagnosis, examination, operation } = data;
-
   if (!patient.lastName.trim()) errors.push('Фамилия пациента');
   if (!patient.firstName.trim()) errors.push('Имя пациента');
   if (!patient.birthDate) errors.push('Дата рождения');
@@ -89,7 +109,6 @@ function validateForm(data: FormData): string[] {
   if (!diagnosis.anatomicalArea.trim()) errors.push('Анатомическая область');
   if (!examination.xrayDescription.trim()) errors.push('Описание рентгенографии');
   if (!operation.operationVolume.trim()) errors.push('Объём операции');
-
   if (patient.admissionDate && patient.operationDate && patient.dischargeDate) {
     const adm = new Date(patient.admissionDate);
     const op = new Date(patient.operationDate);
@@ -103,25 +122,16 @@ function validateForm(data: FormData): string[] {
 // ─── localStorage ────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'med_docs_saved_cases_v2';
-
 function loadCases(): SavedCase[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+  catch { return []; }
 }
-
 function saveCases(cases: SavedCase[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
 }
 
-// ─── Анимированный контент ────────────────────────────────────────────────────
+// ─── AnimatedPane ─────────────────────────────────────────────────────────────
 
-/**
- * Оборачивает children в div с fade+slide анимацией при смене ключа.
- */
 const AnimatedPane: React.FC<{ tabKey: string; children: React.ReactNode }> = ({ tabKey, children }) => {
   const [visible, setVisible] = useState(false);
   const [content, setContent] = useState(children);
@@ -129,38 +139,38 @@ const AnimatedPane: React.FC<{ tabKey: string; children: React.ReactNode }> = ({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (tabKey === currentKey) {
-      setVisible(true);
-      return;
-    }
-    // Fade out, swap content, fade in
+    if (tabKey === currentKey) { setVisible(true); return; }
     setVisible(false);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       setContent(children);
       setCurrentKey(tabKey);
       setVisible(true);
-    }, 180);
+    }, 160);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [tabKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep content in sync when same tab re-renders
-  useEffect(() => {
-    if (tabKey === currentKey) setContent(children);
-  });
+  useEffect(() => { if (tabKey === currentKey) setContent(children); });
 
   return (
-    <div
-      style={{
-        transition: 'opacity 0.18s ease, transform 0.18s ease',
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(6px)',
-      }}
-    >
+    <div style={{
+      transition: 'opacity 0.16s ease, transform 0.16s ease',
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'translateY(0)' : 'translateY(5px)',
+    }}>
       {content}
     </div>
   );
 };
+
+// ─── Статус-индикатор ─────────────────────────────────────────────────────────
+
+const StatusDot: React.FC<{ label: string; ok: boolean }> = ({ label, ok }) => (
+  <div className="flex items-center gap-2">
+    <div className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors duration-300 ${ok ? 'bg-positive' : 'bg-line-strong'}`} />
+    <span className={`text-xs transition-colors duration-300 ${ok ? 'text-positive' : 'text-ink-4'}`}>{label}</span>
+  </div>
+);
 
 // ─── Главный компонент ────────────────────────────────────────────────────────
 
@@ -187,13 +197,8 @@ export default function App() {
 
   const handleGenerate = useCallback(() => {
     const errs = validateForm(formData);
-    if (errs.length > 0) {
-      setErrors(errs);
-      setShowErrors(true);
-      return;
-    }
-    setShowErrors(false);
-    setErrors([]);
+    if (errs.length > 0) { setErrors(errs); setShowErrors(true); return; }
+    setShowErrors(false); setErrors([]);
     setIsGenerating(true);
     setTimeout(() => {
       const result = generateAllDocuments(formData);
@@ -203,7 +208,7 @@ export default function App() {
       setSelectedDocId(first?.id ?? null);
       setActiveTab('documents');
       setIsGenerating(false);
-      showSuccessMsg(`Сгенерировано: ${result.diaries.length} дневников + ${result.preopEpicrisis ? '1 эпикриз' : '0'}`);
+      showSuccessMsg(`Готово: ${result.diaries.length} дневников${result.preopEpicrisis ? ' + эпикриз' : ''}`);
     }, 150);
   }, [formData]);
 
@@ -217,44 +222,29 @@ export default function App() {
   }, [preopEpicrisis]);
 
   const handleExport = useCallback(async () => {
-    if (diaries.length === 0 && !preopEpicrisis) {
-      setErrors(['Сначала сгенерируйте документы']);
-      setShowErrors(true);
-      return;
-    }
+    if (diaries.length === 0 && !preopEpicrisis) { setErrors(['Сначала сгенерируйте документы']); setShowErrors(true); return; }
     setIsExporting(true);
-    try {
-      await exportToDocx(formData, diaries, preopEpicrisis);
-      showSuccessMsg('Файл DOCX скачан');
-    } catch (e) {
-      setErrors([String(e)]);
-      setShowErrors(true);
-    } finally {
-      setIsExporting(false);
-    }
+    try { await exportToDocx(formData, diaries, preopEpicrisis); showSuccessMsg('Файл DOCX скачан'); }
+    catch (e) { setErrors([String(e)]); setShowErrors(true); }
+    finally { setIsExporting(false); }
   }, [formData, diaries, preopEpicrisis]);
 
   const handleSaveCase = useCallback((name: string) => {
     const nc: SavedCase = { id: Date.now().toString(), name, savedAt: new Date().toISOString(), formData };
     const updated = [nc, ...savedCases].slice(0, 20);
-    setSavedCases(updated);
-    saveCases(updated);
+    setSavedCases(updated); saveCases(updated);
     showSuccessMsg(`Случай «${name}» сохранён`);
   }, [formData, savedCases]);
 
   const handleLoadCase = useCallback((c: SavedCase) => {
-    setFormData(c.formData);
-    setDiaries([]);
-    setPreopEpicrisis(null);
-    setSelectedDocId(null);
-    setActiveTab('patient');
+    setFormData(c.formData); setDiaries([]); setPreopEpicrisis(null);
+    setSelectedDocId(null); setActiveTab('patient');
     showSuccessMsg(`Загружен случай «${c.name}»`);
   }, []);
 
   const handleDeleteCase = useCallback((id: string) => {
     const updated = savedCases.filter((c) => c.id !== id);
-    setSavedCases(updated);
-    saveCases(updated);
+    setSavedCases(updated); saveCases(updated);
   }, [savedCases]);
 
   function showSuccessMsg(msg: string) {
@@ -263,105 +253,114 @@ export default function App() {
   }
 
   const hasDocuments = diaries.length > 0 || preopEpicrisis !== null;
-  const selectedDocument =
-    selectedDocId === preopEpicrisis?.id
-      ? preopEpicrisis
-      : diaries.find((d) => d.id === selectedDocId) ?? null;
-
+  const selectedDocument = selectedDocId === preopEpicrisis?.id
+    ? preopEpicrisis
+    : diaries.find((d) => d.id === selectedDocId) ?? null;
   const isDocMode = activeTab === 'documents';
+  const docCount = diaries.length + (preopEpicrisis ? 1 : 0);
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans flex flex-col">
+    <div className="min-h-screen bg-canvas font-sans flex flex-col">
 
-      {/* ── Шапка ─────────────────────────────────────────────────────────── */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
-        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg font-bold shrink-0">
-              М
+      {/* ── Шапка ──────────────────────────────────────────────────────── */}
+      <header className="bg-surface border-b border-line sticky top-0 z-20">
+        <div className="max-w-screen-2xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
+
+          {/* Логотип */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-7 h-7 bg-ink rounded-md flex items-center justify-center shrink-0">
+              <svg viewBox="0 0 14 14" fill="none" className="w-4 h-4">
+                <path d="M7 2v10M2 7h10" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+              </svg>
             </div>
-            <div>
-              <h1 className="text-base font-bold text-gray-900 leading-tight">
-                Медицинские документы
-              </h1>
-              <p className="text-xs text-gray-500">Травматология / Ортопедия</p>
+            <div className="leading-tight">
+              <span className="text-sm font-semibold text-ink">Мед. документы</span>
+              <span className="text-xs text-ink-3 ml-2 hidden sm:inline">Травматология · Ортопедия</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Кнопки */}
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowSavedCases((v) => !v)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition ${
-                showSavedCases ? 'border-blue-400 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
-              }`}
+              className={`btn btn-sm btn-ghost ${showSavedCases ? '!border-brand/30 !text-brand !bg-brand-light' : ''}`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+                <path d="M4 14H3a1 1 0 01-1-1V5a1 1 0 011-1h2.5L7 5.5h4A1 1 0 0112 6.5V8M4 14h9a1 1 0 001-1v-4a1 1 0 00-1-1H8a1 1 0 00-1 1v4a1 1 0 01-1 1z" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Случаи{savedCases.length > 0 && ` (${savedCases.length})`}
+              <span className="hidden sm:inline">Случаи</span>
+              {savedCases.length > 0 && (
+                <span className="bg-ink-4/30 text-ink-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none">
+                  {savedCases.length}
+                </span>
+              )}
             </button>
 
             <button
-              onClick={() => { if (confirm('Очистить все данные формы?')) { setFormData(INITIAL_FORM); setDiaries([]); setPreopEpicrisis(null); setSelectedDocId(null); setActiveTab('patient'); } }}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition"
+              onClick={() => { if (confirm('Очистить все данные формы?')) { setFormData(INITIAL_FORM); setDiaries([]); setPreopEpicrisis(null); setSelectedDocId(null); setActiveTab('patient'); }}}
+              className="btn btn-sm btn-ghost"
             >
-              Очистить
-            </button>
-
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-60 shadow-sm"
-            >
-              {isGenerating
-                ? <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Генерирую...</>
-                : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>Сгенерировать</>
-              }
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+                <path d="M6 2h4M2.5 4h11M11.5 4l-.6 8.1A1 1 0 0110 13H6a1 1 0 01-1-.9L4.5 4" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="hidden sm:inline">Очистить</span>
             </button>
 
             {hasDocuments && (
-              <button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition disabled:opacity-60 shadow-sm"
-              >
+              <button onClick={handleExport} disabled={isExporting} className="btn btn-sm btn-md btn-ghost border-positive/30 text-positive bg-positive-light hover:bg-positive/10">
                 {isExporting
-                  ? <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Экспорт...</>
-                  : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>Скачать DOCX</>
+                  ? <><Spinner /> <span className="hidden sm:inline">Экспорт...</span></>
+                  : <>
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+                        <path d="M8 2v8M5 7l3 3 3-3M3 13h10" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span className="hidden sm:inline">Скачать DOCX</span>
+                    </>
                 }
               </button>
             )}
+
+            <button onClick={handleGenerate} disabled={isGenerating} className="btn btn-sm btn-md btn-dark">
+              {isGenerating
+                ? <><Spinner /> Генерирую...</>
+                : <>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+                      <path d="M2 8h3l2-5 3 10 2-5h2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Сгенерировать
+                  </>
+              }
+            </button>
           </div>
         </div>
       </header>
 
-      {/* ── Уведомление об успехе ─────────────────────────────────────────── */}
+      {/* ── Toast ───────────────────────────────────────────────────────── */}
       {successMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-green-600 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <div className="fixed bottom-6 right-6 z-50 bg-ink text-white px-4 py-3 rounded-xl shadow-toast text-sm font-medium flex items-center gap-2.5 animate-fade-up">
+          <svg className="w-4 h-4 text-positive-muted shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 8l3.5 3.5L13 5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           {successMessage}
         </div>
       )}
 
-      {/* ── Ошибки ───────────────────────────────────────────────────────── */}
+      {/* ── Ошибки ──────────────────────────────────────────────────────── */}
       {showErrors && errors.length > 0 && (
-        <div className="max-w-screen-2xl mx-auto px-4 mt-3 w-full">
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3">
-            <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div className="max-w-screen-2xl mx-auto px-5 pt-3 w-full animate-fade-up">
+          <div className="bg-negative-light border border-negative/20 rounded-xl p-4 flex gap-3">
+            <svg className="w-4 h-4 text-negative shrink-0 mt-0.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11h.01" strokeLinecap="round"/>
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-red-700 mb-1">Заполните обязательные поля:</p>
-              <ul className="text-sm text-red-600 space-y-0.5">
-                {errors.map((e, i) => <li key={i}>• {e}</li>)}
+              <p className="text-xs font-semibold text-negative uppercase tracking-wide mb-1.5">Заполните обязательные поля</p>
+              <ul className="text-sm text-ink-2 space-y-0.5">
+                {errors.map((e, i) => <li key={i} className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-negative/50 shrink-0" />{e}</li>)}
               </ul>
             </div>
-            <button onClick={() => setShowErrors(false)} className="text-red-400 hover:text-red-600 shrink-0">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <button onClick={() => setShowErrors(false)} className="text-ink-3 hover:text-ink shrink-0 transition-colors">
+              <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round"/>
               </svg>
             </button>
           </div>
@@ -369,13 +368,13 @@ export default function App() {
       )}
 
       {/* ── Основной контент ─────────────────────────────────────────────── */}
-      <div className="flex-1 max-w-screen-2xl mx-auto w-full px-4 py-4 flex gap-4 min-h-0">
+      <div className="flex-1 max-w-screen-2xl mx-auto w-full px-5 py-5 flex gap-4 min-h-0">
 
         {/* Панель сохранённых случаев */}
         {showSavedCases && (
-          <aside className="w-64 shrink-0">
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 h-full">
-              <h2 className="text-sm font-semibold text-gray-800 mb-3">Сохранённые случаи</h2>
+          <aside className="w-64 shrink-0 animate-slide-in">
+            <div className="card p-4 h-full">
+              <p className="field-label mb-4">Сохранённые случаи</p>
               <SavedCases
                 cases={savedCases}
                 onLoad={handleLoadCase}
@@ -387,39 +386,41 @@ export default function App() {
           </aside>
         )}
 
-        {/* ── Левый сайдбар: вертикальные табы ──────────────────────────── */}
-        <nav className="w-44 shrink-0 flex flex-col gap-1">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const isDoc = tab.id === 'documents';
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium text-left
-                  transition-all duration-200 w-full
-                  ${isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : isDoc && hasDocuments
-                      ? 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50'
-                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 hover:text-gray-800'
-                  }
-                `}
-              >
-                <span className="text-base leading-none">{tab.icon}</span>
-                <span>{tab.label}</span>
-                {isDoc && hasDocuments && !isActive && (
-                  <span className="ml-auto bg-blue-100 text-blue-600 text-xs font-semibold px-1.5 py-0.5 rounded-full">
-                    {diaries.length + (preopEpicrisis ? 1 : 0)}
+        {/* ── Сайдбар навигации ─────────────────────────────────────────── */}
+        <nav className="w-48 shrink-0 flex flex-col">
+          <div className="space-y-0.5">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const isDoc = tab.id === 'documents';
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`nav-item ${isActive ? 'nav-item-active' : 'nav-item-inactive'}`}
+                >
+                  {/* Active left border */}
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand rounded-r-full" />
+                  )}
+                  <span className={`transition-colors ${isActive ? 'text-brand' : 'text-ink-3'}`}>
+                    {tab.icon}
                   </span>
-                )}
-              </button>
-            );
-          })}
+                  <span>{tab.label}</span>
+                  {isDoc && hasDocuments && (
+                    <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none ${
+                      isActive ? 'bg-brand/15 text-brand' : 'bg-line text-ink-3'
+                    }`}>
+                      {docCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Статус заполнения */}
-          <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+          {/* Разделитель */}
+          <div className="mt-5 pt-4 border-t border-line space-y-2.5">
+            <p className="field-label">Заполнено</p>
             <StatusDot label="Пациент" ok={!!(formData.patient.lastName && formData.patient.admissionDate && formData.patient.operationDate)} />
             <StatusDot label="Диагноз" ok={!!(formData.diagnosis.mainDiagnosis && formData.diagnosis.anatomicalArea)} />
             <StatusDot label="Обследования" ok={!!formData.examination.xrayDescription} />
@@ -428,48 +429,48 @@ export default function App() {
           </div>
         </nav>
 
-        {/* ── Центральная панель ─────────────────────────────────────────── */}
+        {/* ── Центральная панель (формы) ─────────────────────────────────── */}
         {!isDocMode && (
           <div className="flex-1 min-w-0">
             <AnimatedPane tabKey={activeTab}>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                {activeTab === 'patient' && <PatientForm data={formData.patient} onChange={updatePatient} />}
-                {activeTab === 'diagnosis' && <DiagnosisForm data={formData.diagnosis} onChange={updateDiagnosis} />}
-                {activeTab === 'examination' && <ExaminationForm data={formData.examination} onChange={updateExamination} />}
-                {activeTab === 'operation' && <OperationForm data={formData.operation} onChange={updateOperation} />}
+              <div className="card p-6">
+                {activeTab === 'patient'       && <PatientForm data={formData.patient} onChange={updatePatient} />}
+                {activeTab === 'diagnosis'     && <DiagnosisForm data={formData.diagnosis} onChange={updateDiagnosis} />}
+                {activeTab === 'examination'   && <ExaminationForm data={formData.examination} onChange={updateExamination} />}
+                {activeTab === 'operation'     && <OperationForm data={formData.operation} onChange={updateOperation} />}
                 {activeTab === 'immobilization' && <ImmobilizationForm data={formData.immobilization} onChange={updateImmobilization} />}
-                {activeTab === 'doctors' && <DoctorsForm data={formData.doctors} onChange={updateDoctors} />}
+                {activeTab === 'doctors'       && <DoctorsForm data={formData.doctors} onChange={updateDoctors} />}
               </div>
             </AnimatedPane>
           </div>
         )}
 
-        {/* ── Режим документов: предпросмотр + список ────────────────────── */}
+        {/* ── Режим документов ──────────────────────────────────────────── */}
         {isDocMode && (
           <>
             {/* Предпросмотр */}
-            <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="flex-1 min-w-0 card overflow-hidden flex flex-col">
               <DocumentPreview document={selectedDocument} onUpdate={handleDocumentUpdate} />
             </div>
 
             {/* Список документов */}
-            <div className="w-64 shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <h2 className="text-sm font-semibold text-gray-800">Документы</h2>
+            <div className="w-60 shrink-0 card flex flex-col">
+              <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-line">
+                <p className="field-label mb-0">Документы</p>
                 {hasDocuments && (
                   <button
                     onClick={handleExport}
                     disabled={isExporting}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition disabled:opacity-60"
+                    className="btn btn-sm text-[11px] border border-positive/30 text-positive bg-positive-light hover:bg-positive/10 px-2.5 py-1"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3 h-3">
+                      <path d="M8 2v8M5 7l3 3 3-3M3 13h10" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     DOCX
                   </button>
                 )}
               </div>
-              <div className="px-3 pb-4 flex-1 overflow-y-auto">
+              <div className="px-3 py-3 flex-1 overflow-y-auto">
                 <DocumentList
                   diaries={diaries}
                   preopEpicrisis={preopEpicrisis}
@@ -485,9 +486,11 @@ export default function App() {
   );
 }
 
-const StatusDot: React.FC<{ label: string; ok: boolean }> = ({ label, ok }) => (
-  <div className="flex items-center gap-1.5">
-    <div className={`w-2 h-2 rounded-full shrink-0 transition-colors duration-300 ${ok ? 'bg-green-500' : 'bg-gray-300'}`} />
-    <span className={`text-xs transition-colors duration-300 ${ok ? 'text-green-700' : 'text-gray-400'}`}>{label}</span>
-  </div>
+// ─── Спиннер ─────────────────────────────────────────────────────────────────
+
+const Spinner: React.FC = () => (
+  <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 16 16" fill="none">
+    <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" className="opacity-20"/>
+    <path d="M14 8a6 6 0 00-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+  </svg>
 );

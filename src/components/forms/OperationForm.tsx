@@ -20,75 +20,56 @@ export const OperationForm: React.FC<Props> = ({ data, onChange }) => {
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
-        Операция
-      </h2>
+    <div className="space-y-6">
+      <h2 className="section-title">Операция</h2>
 
-      {/* Название операции */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          Название операции <span className="text-red-500">*</span>
-        </label>
+      <div>
+        <label className="field-label">Название операции</label>
         <input
           type="text"
           value={data.operationName}
           onChange={(e) => update('operationName', e.target.value)}
-          placeholder="Например: ЗИМО плечевой кости, интрамедуллярный остеосинтез"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          placeholder="ЗИМО плечевой кости, интрамедуллярный остеосинтез"
+          className="field-input"
         />
       </div>
 
-      {/* Объём операции */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          Объём оперативного лечения <span className="text-red-500">*</span>
-        </label>
+      <div>
+        <label className="field-label">Объём оперативного лечения <span className="text-negative">*</span></label>
         <textarea
           value={data.operationVolume}
           onChange={(e) => update('operationVolume', e.target.value)}
           rows={3}
-          placeholder="Например: ЗИМО левого плеча, ВПА. Интрамедуллярный остеосинтез гвоздём с блокированием."
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+          placeholder="ЗИМО левого плеча, ВПА. Интрамедуллярный остеосинтез гвоздём с блокированием."
+          className="field-textarea"
         />
       </div>
 
-      {/* Вид анестезии */}
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          Вид анестезии <span className="text-red-500">*</span>
-        </label>
-
-        {/* Быстрый выбор */}
-        <div className="flex flex-wrap gap-2 mb-2">
+      <div>
+        <label className="field-label">Вид анестезии <span className="text-negative">*</span></label>
+        <div className="flex flex-wrap gap-2 mb-3 mt-0.5">
           {ANESTHESIA_OPTIONS.map((opt) => (
             <button
               key={opt}
               type="button"
               onClick={() => update('anesthesia', opt)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                data.anesthesia === opt
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
-              }`}
+              className={`chip text-xs py-1.5 ${data.anesthesia === opt ? 'chip-on' : 'chip-off'}`}
             >
               {opt}
             </button>
           ))}
         </div>
-
         <input
           type="text"
           value={data.anesthesia}
           onChange={(e) => update('anesthesia', e.target.value)}
           placeholder="Или введите вручную..."
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+          className="field-input"
         />
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
-        <span className="font-medium">Подсказка:</span> Название и объём операции будут включены
-        в предоперационный эпикриз в раздел «План лечения».
+      <div className="hint-block">
+        Название и объём операции включаются в предоперационный эпикриз в раздел «Обоснование».
       </div>
     </div>
   );

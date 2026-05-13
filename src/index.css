@@ -3,28 +3,166 @@
 @tailwind utilities;
 
 @layer base {
-  * {
+  *, *::before, *::after {
     box-sizing: border-box;
   }
 
   body {
-    @apply antialiased text-gray-900;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #F1EFE9;
+    color: #111318;
+  }
+
+  :focus-visible {
+    outline: 2px solid #2563EB;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: #BFDBFE;
+    color: #111318;
+  }
+}
+
+@layer components {
+  /* ─── Labels ─────────────────────────────────────────────────────── */
+  .field-label {
+    @apply block text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5 leading-none;
+  }
+
+  /* ─── Inputs ─────────────────────────────────────────────────────── */
+  .field-input {
+    @apply w-full border border-line rounded-lg px-3 py-2.5 text-sm text-ink bg-surface
+    placeholder:text-ink-4 shadow-input
+    focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10
+    transition-all duration-150;
+  }
+
+  .field-input-error {
+    @apply field-input border-negative/60 bg-negative-light focus:border-negative focus:ring-negative/10;
+  }
+
+  /* ─── Textareas ──────────────────────────────────────────────────── */
+  .field-textarea {
+    @apply w-full border border-line rounded-lg px-3 py-2.5 text-sm text-ink bg-surface
+    placeholder:text-ink-4 resize-none shadow-input
+    focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10
+    transition-all duration-150;
+  }
+
+  /* ─── Section title ──────────────────────────────────────────────── */
+  .section-title {
+    @apply text-base font-semibold text-ink mb-5 pb-3 border-b border-line;
+  }
+
+  /* ─── Cards ──────────────────────────────────────────────────────── */
+  .card {
+    @apply bg-surface rounded-xl shadow-card;
+  }
+
+  /* ─── Buttons ────────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 font-medium rounded-lg
+    transition-all duration-150 cursor-pointer select-none
+    disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98];
+  }
+
+  .btn-sm { @apply btn text-xs px-3 py-1.5; }
+  .btn-md { @apply btn text-sm px-4 py-2; }
+
+  .btn-dark {
+    @apply bg-ink text-white hover:bg-ink-2;
+  }
+
+  .btn-ghost {
+    @apply border border-line text-ink-2 bg-surface hover:bg-canvas hover:text-ink hover:border-line-strong;
+  }
+
+  .btn-brand {
+    @apply bg-brand text-white hover:bg-brand-hover;
+  }
+
+  .btn-positive {
+    @apply bg-positive text-white hover:bg-positive-hover;
+  }
+
+  .btn-positive-soft {
+    @apply border border-positive/30 text-positive bg-positive-light hover:bg-positive/10;
+  }
+
+  .btn-negative-soft {
+    @apply border border-negative/20 text-negative bg-negative-light hover:bg-negative/10;
+  }
+
+  .btn-brand-soft {
+    @apply border border-brand/20 text-brand bg-brand-light hover:bg-brand/10;
+  }
+
+  /* ─── Selection chips ────────────────────────────────────────────── */
+  .chip {
+    @apply flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-sm
+    font-medium cursor-pointer transition-all duration-150 select-none;
+  }
+
+  .chip-on {
+    @apply border-brand/40 bg-brand-light text-brand;
+  }
+
+  .chip-off {
+    @apply border-line text-ink-2 bg-surface hover:border-line-strong hover:text-ink hover:bg-canvas;
+  }
+
+  /* ─── Inline hint ────────────────────────────────────────────────── */
+  .field-hint {
+    @apply text-xs text-ink-3 mt-1.5 leading-relaxed;
+  }
+
+  .hint-block {
+    @apply border-l-2 border-brand/25 bg-brand-light/40 px-3 py-2.5 rounded-r-lg text-xs text-ink-2 leading-relaxed;
+  }
+
+  /* ─── Nav item ───────────────────────────────────────────────────── */
+  .nav-item {
+    @apply relative flex items-center gap-2.5 w-full px-3 py-2.5 rounded-lg text-sm
+    font-medium transition-all duration-150 text-left cursor-pointer;
+  }
+
+  .nav-item-active {
+    @apply text-brand bg-brand-light;
+  }
+
+  .nav-item-inactive {
+    @apply text-ink-2 hover:text-ink hover:bg-canvas;
   }
 }
 
 @layer utilities {
+  .animate-fade-up {
+    animation: fadeUp 0.2s ease-out both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-in-out;
+    animation: fadeIn 0.2s ease-out both;
   }
 
   @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.2s ease-out both;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
   }
 }

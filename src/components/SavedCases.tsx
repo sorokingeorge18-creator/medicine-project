@@ -11,26 +11,15 @@ interface Props {
   currentData: FormData;
 }
 
-export const SavedCases: React.FC<Props> = ({
-  cases,
-  onLoad,
-  onDelete,
-  onSave,
-  currentData,
-}) => {
+export const SavedCases: React.FC<Props> = ({ cases, onLoad, onDelete, onSave, currentData }) => {
   const [saveName, setSaveName] = useState('');
   const [showSaveForm, setShowSaveForm] = useState(false);
 
-  // Генерируем имя по умолчанию из данных пациента
   const defaultName = [
     currentData.patient.lastName,
     currentData.patient.firstName,
-    currentData.patient.admissionDate
-      ? formatDateShort(parseISO(currentData.patient.admissionDate))
-      : '',
-  ]
-    .filter(Boolean)
-    .join(' — ');
+    currentData.patient.admissionDate ? formatDateShort(parseISO(currentData.patient.admissionDate)) : '',
+  ].filter(Boolean).join(' — ');
 
   const handleSave = () => {
     const name = saveName.trim() || defaultName || 'Безымянный случай';
@@ -41,42 +30,36 @@ export const SavedCases: React.FC<Props> = ({
 
   return (
     <div className="space-y-3">
-      {/* Кнопка сохранения */}
+      {/* Кнопка / форма сохранения */}
       {!showSaveForm ? (
         <button
           onClick={() => setShowSaveForm(true)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition"
+          className="w-full btn btn-sm btn-ghost text-xs justify-center py-2"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+          <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M8 2v8M5 7l3 3 3-3M3 13h10" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
-          Сохранить текущий случай
+          Сохранить случай
         </button>
       ) : (
-        <div className="border border-green-200 rounded-lg p-3 bg-green-50 space-y-2">
-          <label className="text-xs font-medium text-gray-700">
-            Название случая
-          </label>
+        <div className="border border-line rounded-lg p-3 bg-canvas space-y-2.5 animate-fade-up">
+          <label className="field-label">Название случая</label>
           <input
             type="text"
             value={saveName}
             onChange={(e) => setSaveName(e.target.value)}
             placeholder={defaultName || 'Введите название...'}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="field-input text-xs py-2"
             autoFocus
           />
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition"
-            >
+          <div className="flex gap-1.5">
+            <button onClick={handleSave} className="flex-1 btn btn-sm text-xs btn-dark py-1.5">
               Сохранить
             </button>
             <button
               onClick={() => { setShowSaveForm(false); setSaveName(''); }}
-              className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+              className="btn btn-sm btn-ghost text-xs py-1.5"
             >
               Отмена
             </button>
@@ -84,44 +67,41 @@ export const SavedCases: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Список сохранённых случаев */}
+      {/* Список */}
       {cases.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          <svg className="w-10 h-10 mx-auto mb-2 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
-          </svg>
-          <p className="text-sm">Сохранённых случаев нет</p>
+        <div className="text-center py-8">
+          <div className="w-9 h-9 rounded-lg bg-line-subtle flex items-center justify-center mx-auto mb-2.5">
+            <svg className="w-4.5 h-4.5 text-ink-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M4 14H3a1 1 0 01-1-1V5a1 1 0 011-1h2.5L7 5.5h4a1 1 0 011 1V8" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4 14h9a1 1 0 001-1v-4a1 1 0 00-1-1H8a1 1 0 00-1 1v4a1 1 0 01-1 1z" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <p className="text-xs text-ink-3">Сохранённых случаев нет</p>
         </div>
       ) : (
-        <div className="space-y-2">
-          <p className="text-xs text-gray-500">
-            Сохранено случаев: <span className="font-semibold">{cases.length}</span>
-          </p>
+        <div className="space-y-1.5">
+          <p className="field-label">{cases.length} сохранено</p>
           {cases.map((c) => {
-            const savedDate = new Date(c.savedAt);
-            const savedStr = formatDateShort(savedDate);
+            const savedStr = formatDateShort(new Date(c.savedAt));
             return (
               <div
                 key={c.id}
-                className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:border-gray-300 transition"
+                className="flex items-center gap-2 p-2.5 border border-line rounded-lg bg-surface hover:border-line-strong transition-colors duration-150"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{c.name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Сохранён: {savedStr}</p>
+                  <p className="text-xs font-semibold text-ink truncate">{c.name}</p>
+                  <p className="text-[11px] text-ink-4 mt-0.5">{savedStr}</p>
                 </div>
-                <div className="flex gap-1.5 shrink-0">
+                <div className="flex gap-1 shrink-0">
                   <button
                     onClick={() => onLoad(c)}
-                    className="px-2.5 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition"
+                    className="btn btn-sm text-[11px] btn-brand-soft px-2 py-1"
                   >
-                    Загрузить
+                    Открыть
                   </button>
                   <button
-                    onClick={() => {
-                      if (confirm(`Удалить случай "${c.name}"?`)) onDelete(c.id);
-                    }}
-                    className="px-2.5 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 transition"
+                    onClick={() => { if (confirm(`Удалить случай "${c.name}"?`)) onDelete(c.id); }}
+                    className="btn btn-sm btn-negative-soft px-2 py-1 text-[11px]"
                   >
                     ✕
                   </button>
