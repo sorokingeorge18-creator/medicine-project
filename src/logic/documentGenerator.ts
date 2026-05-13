@@ -2,7 +2,7 @@
 // Генерация медицинских документов по эталонному формату
 // ============================================================
 
-import { parseISO, isSameDay, isAfter } from 'date-fns';
+import { parseISO, isAfter } from 'date-fns';
 import {
   FormData,
   DiaryEntry,
@@ -38,10 +38,6 @@ function sideGen(side: Side): string {
   return side === 'right' ? 'правой' : 'левой';
 }
 
-/** Прилагательное стороны — именительный, нижний регистр */
-function sideNomLower(side: Side): string {
-  return side === 'right' ? 'правая' : 'левая';
-}
 
 /** Конечность — именительный падеж */
 function limbNom(limbType: LimbType): string {
@@ -85,10 +81,12 @@ interface VitalTexts {
  * Расширенный status praesens — для дня поступления.
  * Соответствует формату из первичного осмотра с заведующим.
  */
-function buildStatusPraesensAdmission(v: VitalTexts): string {
+function buildStatusPraesensAdmission(v: VitalTexts, gender: Gender): string {
   const temp = v.temperature.toFixed(1).replace('.', ',');
+  const adj1 = genderForm(gender, 'Больная', 'Больной');
+  const adj2 = genderForm(gender, 'ориентирована', 'ориентирован');
   return (
-    `Состояние удовлетворительное. Сознание ясное. Кожные покровы физиологической окраски, чистые, сухие. ` +
+    `Состояние удовлетворительное. ${adj1} в сознании, ${adj2} в пространстве, времени и личности. Кожные покровы физиологической окраски, чистые, сухие. ` +
     `АД ${v.bpSystolic}/${v.bpDiastolic} мм.рт.ст. Ps ${v.pulse} в мин. ЧДД ${v.rr} в мин. Температура тела ${temp}. ` +
     `Грудная клетка правильной конфигурации, равномерно участвует в акте дыхания; при пальпации эластичная, безболезненная. ` +
     `Дыхание везикулярное, хрипов нет, одинаковое над симметричными отделами легких. ` +
@@ -105,11 +103,12 @@ function buildStatusPraesensAdmission(v: VitalTexts): string {
  */
 function buildStatusPraesensRegular(v: VitalTexts, gender: Gender): string {
   const temp = v.temperature.toFixed(1).replace('.', ',');
-  const adj1 = genderForm(gender, 'Адекватна', 'Адекватен');
+  const subj = genderForm(gender, 'Больная', 'Больной');
+  const adj1 = genderForm(gender, 'адекватна', 'адекватен');
   const adj2 = genderForm(gender, 'критична', 'критичен');
   const adj3 = genderForm(gender, 'ориентирована', 'ориентирован');
   return (
-    `Состояние удовлетворительное. ${adj1}, к своему состоянию ${adj2}, в месте, времени и личности ${adj3}. ` +
+    `Состояние удовлетворительное. ${subj} ${adj1}, к своему состоянию ${adj2}, в месте, времени и личности ${adj3}. ` +
     `Гемодинамика стабильная. Тоны сердца ясные, ритмичные. ` +
     `АД ${v.bpSystolic}/${v.bpDiastolic} мм. рт. ст. пульс ${v.pulse} уд. в мин., кожные покровы физиологической окраски. ` +
     `Дыхание везикулярное, проводится во всех отделах. хрипов нет ЧДД ${v.rr}. ` +
@@ -121,27 +120,51 @@ function buildStatusPraesensRegular(v: VitalTexts, gender: Gender): string {
 // ─── Status localis ───────────────────────────────────────────────────────────
 
 /**
+ * Строка фиксации для строки status localis (до операции).
+ * Возвращает описание фиксации или пустую строку если нет.
+ */
+function buildAdmissionFixLine(
+  side: Side,
+  limbType: LimbType,
+  fixationType: PostOpFixationType,
+  fixationDescription: string
+): string {
+  const sn = sideNom(side, limbType);
+  const ln = limbNom(limbType);
+  switch (fixationType) {
+    case 'cast':
+      return `${sn} ${ln} в гипсовой повязке. Гипсовая повязка стабильна.`;
+    case 'sling':
+      return `${sn} ${ln} в косыночной повязке. Косыночная повязка в порядке.`;
+    case 'deso':
+      return `${sn} ${ln} в повязке Дезо. Повязка Дезо в порядке.`;
+    case 'other':
+      return fixationDescription ? `${sn} ${ln} ${fixationDescription}.` : '';
+    default:
+      return '';
+  }
+}
+
+/**
  * Status localis для дневника до операции.
  */
 function buildLocalisPreOp(
   side: Side,
   limbType: LimbType,
   localisArea: string,
-  castOnAdmission: boolean,
-  castDescription: string,
+  admissionFixation: PostOpFixationType,
+  admissionFixationDescription: string,
   edema: string
 ): string {
   const sg = sideGen(side);
   const lg = limbGen(limbType);
   const area = localisArea || 'плечевого сустава';
+  const fixLine = buildAdmissionFixLine(side, limbType, admissionFixation, admissionFixationDescription);
 
-  if (castOnAdmission && castDescription) {
-    return `${castDescription} В области ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет. Лечение получает.`;
+  if (fixLine) {
+    return `${fixLine} Отёк ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет. Лечение получает.`;
   }
-  if (castOnAdmission) {
-    return `Ось ${sg} ${lg} визуально не нарушена. Гипсовая повязка стабильна. В области ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет. Лечение получает.`;
-  }
-  return `Ось ${sg} ${lg} визуально не нарушена. В области ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет. Лечение получает.`;
+  return `Ось ${sg} ${lg} визуально не нарушена. Отёк ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет. Лечение получает.`;
 }
 
 /**
@@ -194,7 +217,7 @@ function buildLocalisPostOp(
     `Послеоперационная рана без особенностей, отделяемое – нет.`;
 
   return (
-    `${fixLine}${fixStatus} Отёк области ${sg} ${area} ${edema}. ` +
+    `${fixLine}${fixStatus} Отёк ${sg} ${area} ${edema}. ` +
     `${woundLine} Периферических ишемических и неврологических нарушений в ${sg} ${lg} не выявлено.`
   );
 }
@@ -276,13 +299,13 @@ function generateDiaryContent(
 ): string {
   const { patient, diagnosis, immobilization, doctors } = formData;
   const { side, limbType, localisArea, mainDiagnosis, comorbidities } = diagnosis;
-  const time = patient.examinationTime || '10:00';
+  // Для дневника поступления используем вычисленное время, иначе — время осмотра по умолчанию
+  const time = entry.time || patient.examinationTime || '10:00';
   const dateStr = formatDateShort(entry.date);
   const lastName = patient.lastName;
 
-  const admissionDate = parseISO(patient.admissionDate);
   const operationDate = parseISO(patient.operationDate);
-  const isAdmission = isSameDay(entry.date, admissionDate);
+  const isAdmission = entry.isAdmission;
   const isPostOp = isAfter(entry.date, operationDate);
 
   // Подбираем заголовок дневника
@@ -306,7 +329,7 @@ function generateDiaryContent(
 
   // Status praesens
   const praesensText = isAdmission
-    ? buildStatusPraesensAdmission(vitals)
+    ? buildStatusPraesensAdmission(vitals, patient.gender)
     : buildStatusPraesensRegular(vitals, patient.gender);
 
   // Отёк
@@ -321,7 +344,7 @@ function generateDiaryContent(
       )
     : buildLocalisPreOp(
         side, limbType, localisArea,
-        immobilization.castOnAdmission, immobilization.castDescription,
+        immobilization.admissionFixation, immobilization.admissionFixationDescription,
         edema
       );
 
@@ -450,22 +473,20 @@ function generatePreopEpicrisisContent(formData: FormData): string {
     `Живот мягкий, безболезненный. Перитониальные симптомы отрицательные. Физиологические отправления в порядке. Температура 36,4.`;
 
   // Status localis эпикриза
+  const sg = sideGen(diagnosis.side);
+  const area = diagnosis.localisArea || 'плечевого сустава';
+  const lg = limbGen(diagnosis.limbType);
+  const admFixLine = buildAdmissionFixLine(
+    diagnosis.side, diagnosis.limbType,
+    immobilization.admissionFixation, immobilization.admissionFixationDescription
+  );
   let localisEpicr: string;
-  if (immobilization.castOnAdmission) {
-    const castDesc = immobilization.castDescription
-      ? immobilization.castDescription
-      : `${sideNomLower(diagnosis.side)} ${limbNom(diagnosis.limbType)} в гипсовой лонгете`;
-    const sg = sideGen(diagnosis.side);
-    const area = diagnosis.localisArea || 'плечевого сустава';
-    const lg = limbGen(diagnosis.limbType);
+  if (admFixLine) {
     localisEpicr =
-      `${castDesc}. Гипсовая повязка в порядке. ` +
-      `Отёк области ${sg} ${area} умеренный, не нарос. ` +
+      `${admFixLine} ` +
+      `Отёк ${sg} ${area} умеренный, не нарос. ` +
       `Периферических ишемических и неврологических нарушений в ${sg} ${lg} не выявлено.`;
   } else {
-    const sg = sideGen(diagnosis.side);
-    const area = diagnosis.localisArea || 'плечевого сустава';
-    const lg = limbGen(diagnosis.limbType);
     localisEpicr =
       `В области ${sg} ${area} умеренный отёк мягких тканей, болезненность при пальпации. ` +
       `Периферических ишемических и неврологических нарушений в ${sg} ${lg} не выявлено.`;
@@ -540,7 +561,8 @@ export function generateAllDocuments(formData: FormData): {
   const dateEntries = calculateDiaryDates(
     patient.admissionDate,
     patient.operationDate,
-    patient.dischargeDate
+    patient.dischargeDate,
+    patient.admissionTime
   );
 
   const vitalSignsArr = generateUniqueVitalSigns(dateEntries.length);

@@ -6,16 +6,16 @@ interface Props {
   onChange: (data: PatientData) => void;
 }
 
-/** YYYY-MM-DD → DD/MM/YYYY */
+/** YYYY-MM-DD → DD.MM.YYYY */
 function isoToDisplay(iso: string): string {
   if (!iso || iso.length < 10) return iso;
   const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
+  return `${d}.${m}.${y}`;
 }
 
-/** DD/MM/YYYY → YYYY-MM-DD, или '' если неполная */
+/** DD.MM.YYYY → YYYY-MM-DD, или '' если неполная */
 function displayToIso(display: string): string {
-  const parts = display.split('/');
+  const parts = display.split('.');
   if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
   }
@@ -50,8 +50,8 @@ const InputField: React.FC<{
 );
 
 /**
- * Поле ввода даты в формате DD/MM/YYYY.
- * Внутри хранит YYYY-MM-DD (ISO), снаружи показывает DD/MM/YYYY.
+ * Поле ввода даты в формате DD.MM.YYYY.
+ * Внутри хранит YYYY-MM-DD (ISO), снаружи показывает DD.MM.YYYY.
  * Автоматически вставляет слэши после дня и месяца.
  */
 const DateField: React.FC<{
@@ -67,14 +67,14 @@ const DateField: React.FC<{
     setDisplay(isoToDisplay(value));
   }, [value]);
 
-  const isValid = !display || display.length === 0 || /^\d{2}\/\d{2}\/\d{4}$/.test(display);
+  const isValid = !display || display.length === 0 || /^\d{2}\.\d{2}\.\d{4}$/.test(display);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let v = e.target.value.replace(/[^0-9/]/g, '');
-    // Автовставка первого слэша после дня (2 цифры)
-    if (v.length === 2 && !v.includes('/')) v = v + '/';
-    // Автовставка второго слэша после месяца ("DD/MM")
-    if (v.length === 5 && (v.match(/\//g) || []).length === 1) v = v + '/';
+    let v = e.target.value.replace(/[^0-9.]/g, '');
+    // Автовставка точки после дня (2 цифры)
+    if (v.length === 2 && !v.includes('.')) v = v + '.';
+    // Автовставка точки после месяца ("DD.MM")
+    if (v.length === 5 && (v.match(/\./g) || []).length === 1) v = v + '.';
     if (v.length > 10) return;
     setDisplay(v);
     const iso = displayToIso(v);
@@ -86,20 +86,20 @@ const DateField: React.FC<{
       <label className="text-sm font-medium text-gray-700">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
-        <span className="text-xs text-gray-400 font-normal ml-2">ДД/ММ/ГГГГ</span>
+        <span className="text-xs text-gray-400 font-normal ml-2">ДД.ММ.ГГГГ</span>
       </label>
       <input
         type="text"
         value={display}
         onChange={handleChange}
-        placeholder="01/04/2026"
+        placeholder="01.04.2026"
         maxLength={10}
         className={`border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
           isValid ? 'border-gray-300' : 'border-red-400 bg-red-50'
         }`}
       />
       {!isValid && (
-        <p className="text-xs text-red-500">Формат: ДД/ММ/ГГГГ (например 01/04/2026)</p>
+        <p className="text-xs text-red-500">Формат: ДД.ММ.ГГГГ (например 01.04.2026)</p>
       )}
     </div>
   );

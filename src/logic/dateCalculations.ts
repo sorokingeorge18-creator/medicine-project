@@ -20,6 +20,8 @@ export interface DiaryDateEntry {
   isPostOp: boolean;
   isAdmission: boolean;
   isDischarge: boolean;
+  /** Переопределённое время осмотра (только для дневника поступления) */
+  time?: string;
 }
 
 /**
@@ -66,10 +68,41 @@ function deduplicateDates(entries: DiaryDateEntry[]): DiaryDateEntry[] {
 }
 
 /**
+ * Вычисляет дату и время первичного осмотра с заведующим
+ * в зависимости от времени поступления:
+ * - 00:00–07:59 → тот же день, 10:00
+ * - 08:00–14:59 → тот же день, время + 2 ч (округление вверх до часа), макс 16:00
+ * - 15:00–23:59 → следующий день, 10:00
+ */
+function computeAdmissionExamDateTime(
+  admission: Date,
+  admissionTime: string
+): { date: Date; time: string } {
+  const parts = admissionTime.split(':');
+  const h = parseInt(parts[0] || '0', 10);
+  const m = parseInt(parts[1] || '0', 10);
+
+  if (h >= 15) {
+    return { date: addDays(admission, 1), time: '10:00' };
+  }
+  if (h < 8) {
+    return { date: admission, time: '10:00' };
+  }
+  // 08:00–14:59: время + 2 ч, округление вверх до целого часа, макс 16:00
+  const totalMinutes = h * 60 + m + 120;
+  let examHour = Math.ceil(totalMinutes / 60);
+  if (examHour > 16) examHour = 16;
+  return {
+    date: admission,
+    time: `${String(examHour).padStart(2, '0')}:00`,
+  };
+}
+
+/**
  * Основная функция расчёта дат дневников.
  *
  * Алгоритм:
- * 1. День поступления → дневник с заведующим
+ * 1. День поступления → дневник с заведующим (дата/время зависит от времени поступления)
  * 2. Все ПН/СР/ПТ строго между поступлением (не включая) и операцией (не включая)
  * 3. День после операции → послеоперационный дневник
  *    (если совпадает с ПН/СР/ПТ → обновляем существующую запись, не дублируем)
@@ -79,21 +112,26 @@ function deduplicateDates(entries: DiaryDateEntry[]): DiaryDateEntry[] {
 export function calculateDiaryDates(
   admissionDateStr: string,
   operationDateStr: string,
-  dischargeDateStr: string
+  dischargeDateStr: string,
+  admissionTime: string = '10:00'
 ): DiaryDateEntry[] {
   const admission = parseISO(admissionDateStr);
   const operation = parseISO(operationDateStr);
   const discharge = parseISO(dischargeDateStr);
 
+  const { date: admissionExamDate, time: admissionExamTime } =
+    computeAdmissionExamDateTime(admission, admissionTime);
+
   const entries: DiaryDateEntry[] = [];
 
-  // 1. День поступления
+  // 1. Дневник поступления (может быть на следующий день если поступление после 15:00)
   entries.push({
-    date: admission,
+    date: admissionExamDate,
     type: 'withHead',
     isPostOp: false,
     isAdmission: true,
-    isDischarge: isSameDay(admission, discharge),
+    isDischarge: isSameDay(admissionExamDate, discharge),
+    time: admissionExamTime,
   });
 
   // 2. ПН/СР/ПТ строго между поступлением (не включая) и операцией (не включая)
@@ -177,11 +215,11 @@ export function formatDateRu(date: Date): string {
 }
 
 /**
- * Форматирует дату в формат DD/MM/YYYY.
+ * Форматирует дату в формат DD.MM.YYYY.
  */
 export function formatDateShort(date: Date): string {
   const d = String(date.getDate()).padStart(2, '0');
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const y = date.getFullYear();
-  return `${d}/${m}/${y}`;
+  return `${d}.${m}.${y}`;
 }

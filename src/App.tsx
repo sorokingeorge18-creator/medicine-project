@@ -47,8 +47,8 @@ const INITIAL_FORM: FormData = {
     anesthesia: '',
   },
   immobilization: {
-    castOnAdmission: false,
-    castDescription: '',
+    admissionFixation: 'none',
+    admissionFixationDescription: '',
     postOpFixation: 'none',
     fixationDescription: '',
   },

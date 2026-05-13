@@ -140,7 +140,7 @@ function parseLineRuns(line: string): TextRun[] {
   // Заголовок дневника: первая строка с датой и фамилией
   // Формат: "30.10.2025 10:00      Первичный осмотр...      Голышева"
   // Фамилия в конце — жирная
-  const headerMatch = line.match(/^(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2}\s+)(.*?)\s{2,}(\S+)$/);
+  const headerMatch = line.match(/^(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}\s+)(.*?)\s{2,}(\S+)$/);
   if (headerMatch) {
     return [
       makeRun(headerMatch[1], false),
@@ -176,7 +176,7 @@ function makeLineParagraph(line: string): Paragraph {
   // Центрирование заголовка ПРЕДОПЕРАЦИОННЫЙ ЭПИКРИЗ
   const isCenteredTitle =
     line.trim() === 'ПРЕДОПЕРАЦИОННЫЙ ЭПИКРИЗ' ||
-    /^\d{2}\/\d{2}\/\d{4} г\. \d{2}:\d{2}$/.test(line.trim());
+    /^\d{2}\.\d{2}\.\d{4} г\. \d{2}:\d{2}$/.test(line.trim());
 
   if (isCenteredTitle) {
     return new Paragraph({
@@ -265,7 +265,7 @@ export async function exportToDocx(
 
   const lastName = patient.lastName || 'Пациент';
   const dischargeDate = patient.dischargeDate
-    ? formatDateShort(parseISO(patient.dischargeDate)).replace(/\//g, '-')
+    ? formatDateShort(parseISO(patient.dischargeDate)).replace(/\./g, '-')
     : 'дата';
   const fileName = `${lastName}_${dischargeDate}.docx`;
 

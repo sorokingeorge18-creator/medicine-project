@@ -65,8 +65,8 @@ export type PostOpFixationType = 'none' | 'cast' | 'sling' | 'deso' | 'other';
 
 /** Данные иммобилизации */
 export interface ImmobilizationData {
-  castOnAdmission: boolean;
-  castDescription: string;
+  admissionFixation: PostOpFixationType;
+  admissionFixationDescription: string;
   postOpFixation: PostOpFixationType;
   fixationDescription: string;
 }
