@@ -74,6 +74,60 @@ function toPrep(phrase: string): string {
   return phrase.trim().split(/\s+/).map(wordToPrep).join(' ');
 }
 
+// ─── Творительный падеж фамилии ───────────────────────────────────────────────
+
+/**
+ * Склоняет первое слово строки «Фамилия И.О.» в творительный падеж.
+ * Инициалы не изменяются.
+ * Пример: «Привалов Д.А.» → «Приваловым Д.А.»
+ */
+function surnameInstrumental(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 0) return fullName;
+  const s = parts[0];
+  const rest = parts.slice(1).join(' ');
+
+  let declined = s;
+
+  // Неизменяемые: -ых/-их (Черных, Долгих)
+  if (/[ыи]х$/i.test(s)) {
+    declined = s;
+  }
+  // Женские адъективные: -ская/-цкая → -ской/-цкой
+  else if (s.endsWith('ская')) declined = s.slice(0, -4) + 'ской';
+  else if (s.endsWith('цкая')) declined = s.slice(0, -4) + 'цкой';
+  // Женские адъективные: -яя → -ей, -ая → -ой
+  else if (s.endsWith('яя'))   declined = s.slice(0, -2) + 'ей';
+  else if (s.endsWith('ая'))   declined = s.slice(0, -2) + 'ой';
+  // Женские существительные: -ова/-ева/-ёва/-ина/-ына → убираем -а, добавляем -ой
+  else if (s.endsWith('ова') || s.endsWith('ева') || s.endsWith('ёва'))
+    declined = s.slice(0, -1) + 'ой';
+  else if (s.endsWith('ина') || s.endsWith('ына'))
+    declined = s.slice(0, -1) + 'ой';
+  // Мужские адъективные: -ой → -ым (Толстой → Толстым)
+  else if (s.endsWith('ой'))   declined = s.slice(0, -2) + 'ым';
+  // Мужские адъективные: -ый → -ым (Белый → Белым)
+  else if (s.endsWith('ый'))   declined = s.slice(0, -2) + 'ым';
+  // Мужские адъективные мягкие: -ий → -им (Горький → Горьким, Достоевский → Достоевским)
+  else if (s.endsWith('ий'))   declined = s.slice(0, -2) + 'им';
+  // Мужские существительные адъективного склонения: -ов/-ев/-ёв → +ым
+  else if (s.endsWith('ов') || s.endsWith('ев') || s.endsWith('ёв'))
+    declined = s + 'ым';
+  // -ин/-ын → +ым (Пушкин → Пушкиным, Ельцин → Ельциным)
+  else if (s.endsWith('ин') || s.endsWith('ын'))
+    declined = s + 'ым';
+  // Твёрдая основа на согласную → +ом (Ятлук → Ятлуком)
+  else if (/[бвгджзклмнпрстфхцчшщ]$/i.test(s))
+    declined = s + 'ом';
+  // Мягкий знак → +ем
+  else if (s.endsWith('ь'))
+    declined = s.slice(0, -1) + 'ем';
+  // Прочее (неизменяемые иностранные фамилии на гласную, кроме -а)
+  // оставляем как есть
+
+  return rest ? `${declined} ${rest}` : declined;
+}
+
 // ─── Грамматика ───────────────────────────────────────────────────────────────
 
 /** Прилагательное стороны — именительный падеж */
@@ -397,9 +451,9 @@ function generateDiaryContent(
   let diaryTitle: string;
   if (entry.type === 'withHead') {
     if (isAdmission) {
-      diaryTitle = `Первичный осмотр совместно с заведующим отделением ${doctors.headName}`;
+      diaryTitle = `Первичный осмотр совместно с заведующим отделением ${surnameInstrumental(doctors.headName)}`;
     } else {
-      diaryTitle = `Осмотр совместно с заведующим отделением ${doctors.headName}`;
+      diaryTitle = `Осмотр совместно с заведующим отделением ${surnameInstrumental(doctors.headName)}`;
     }
   } else if (isFirstPostOp) {
     diaryTitle = 'Осмотр лечащего врача (первые сутки после операции)';
@@ -625,7 +679,7 @@ function generatePreopEpicrisisContent(formData: FormData): string {
     ``,
     `                              Лечащий врач: ${doctors.attendingName}______________________`,
     ``,
-    `                              Заведующим отделением: ${doctors.headName}______________________`,
+    `                              Заведующим отделением: ${surnameInstrumental(doctors.headName)}______________________`,
   ];
 
   return lines.join('\n');
