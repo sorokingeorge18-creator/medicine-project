@@ -106,6 +106,7 @@ function computeAdmissionExamDateTime(
  * 2. Все ПН/СР/ПТ строго между поступлением (не включая) и операцией (не включая)
  * 3. День после операции → послеоперационный дневник
  *    (если совпадает с ПН/СР/ПТ → обновляем существующую запись, не дублируем)
+ * 3б. Все ПН/СР/ПТ строго между операцией (не включая) и выпиской (не включая)
  * 4. День выписки
  * 5. Убрать дубликаты, отсортировать
  */
@@ -169,6 +170,29 @@ export function calculateDiaryDates(
       isAdmission: false,
       isDischarge: isSameDay(postOpDay, discharge),
     });
+  }
+
+  // 3б. ПН/СР/ПТ строго между операцией (не включая) и выпиской (не включая)
+  let postOpCurrent = addDays(operation, 1);
+  while (isBefore(postOpCurrent, discharge)) {
+    const dayOfWeek = getDay(postOpCurrent);
+    const isMWF = dayOfWeek === 1 || dayOfWeek === 3 || dayOfWeek === 5;
+    if (isMWF) {
+      const key = format(postOpCurrent, 'yyyy-MM-dd');
+      const existing = entries.find((e) => format(e.date, 'yyyy-MM-dd') === key);
+      if (existing) {
+        existing.isPostOp = true; // подтверждаем флаг (если этот день уже добавлен как день после операции)
+      } else {
+        entries.push({
+          date: new Date(postOpCurrent),
+          type: getDiaryType(postOpCurrent, admission),
+          isPostOp: true,
+          isAdmission: false,
+          isDischarge: false,
+        });
+      }
+    }
+    postOpCurrent = addDays(postOpCurrent, 1);
   }
 
   // 4. День выписки (если ещё не добавлен)

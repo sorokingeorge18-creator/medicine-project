@@ -138,8 +138,10 @@ function buildAdmissionFixLine(
   const sn = sideNom(side, limbType);
   const ln = limbNom(limbType);
   switch (fixationType) {
-    case 'cast':
-      return `${sn} ${ln} в гипсовой повязке. Гипсовая повязка стабильна.`;
+    case 'cast': {
+      const castDesc = fixationDescription?.trim() || 'гипсовой повязке';
+      return `${sn} ${ln} в ${castDesc}. Повязка стабильна.`;
+    }
     case 'sling':
       return `${sn} ${ln} в косыночной повязке. Косыночная повязка в порядке.`;
     case 'deso':
@@ -205,10 +207,12 @@ function buildLocalisPostOp(
       fixLine = `${sn} ${ln} в повязке Дезо.`;
       fixStatus = isFirstPostOp ? ` Повязка Дезо в порядке.` : '';
       break;
-    case 'cast':
-      fixLine = `${sn} ${ln} в гипсовой повязке.`;
-      fixStatus = isFirstPostOp ? ` Гипсовая повязка в порядке.` : '';
+    case 'cast': {
+      const castDesc = fixationDescription?.trim() || 'гипсовой повязке';
+      fixLine = `${sn} ${ln} в ${castDesc}.`;
+      fixStatus = isFirstPostOp ? ` Повязка в порядке.` : '';
       break;
+    }
     case 'other':
       fixLine = fixationDescription
         ? `${sn} ${ln} ${fixationDescription}.`
@@ -233,7 +237,8 @@ function buildLocalisPostOp(
 
 // ─── Жалобы ───────────────────────────────────────────────────────────────────
 
-const COMPLAINTS_LATER = [
+// Жалобы для послеоперационных дневников (не первые сутки)
+const COMPLAINTS_POST_OP = [
   'активно жалоб не предъявляет.',
   'жалобы на периодические боли в области оперативного вмешательства.',
   'жалобы на дискомфорт в области оперативного вмешательства.',
@@ -242,6 +247,7 @@ const COMPLAINTS_LATER = [
 function buildComplaints(
   isAdmission: boolean,
   isFirstPostOp: boolean,
+  isPostOp: boolean,
   side: Side,
   localisArea: string,
   index: number,
@@ -255,7 +261,16 @@ function buildComplaints(
   if (isFirstPostOp) {
     return `на умеренные боли в области ${sg} ${area}.`;
   }
-  return COMPLAINTS_LATER[index % COMPLAINTS_LATER.length];
+  if (!isPostOp) {
+    // Дневники до операции — не упоминаем операцию
+    const opts = [
+      'активно жалоб не предъявляет.',
+      `на периодические боли в области ${sg} ${area}.`,
+      `на умеренные боли в области ${sg} ${area}.`,
+    ];
+    return opts[index % opts.length];
+  }
+  return COMPLAINTS_POST_OP[index % COMPLAINTS_POST_OP.length];
 }
 
 // ─── Описание отёка ──────────────────────────────────────────────────────────
@@ -338,7 +353,7 @@ function generateDiaryContent(
   const header = buildDiaryHeader(dateStr, time, diaryTitle, lastName);
 
   // Жалобы
-  const complaints = buildComplaints(isAdmission, isFirstPostOp, side, localisArea, index, nounGender);
+  const complaints = buildComplaints(isAdmission, isFirstPostOp, isPostOp, side, localisArea, index, nounGender);
 
   // Status praesens
   const praesensText = isAdmission
@@ -376,11 +391,10 @@ function generateDiaryContent(
   // Для дневников "с заведующим" — диагноз и рекомендации ПОСЛЕ localis
   let tailBlock = '';
   if (entry.type === 'withHead' && !isAdmission) {
-    const comorbLine = comorbidities?.trim() ? comorbidities : '';
-    const diagFull = comorbLine
-      ? `${mainDiagnosis}. ${comorbLine}`
-      : mainDiagnosis;
-    tailBlock += `\nДиагноз: ${diagFull}`;
+    tailBlock += `\nДиагноз: ${mainDiagnosis}`;
+    if (comorbidities?.trim()) {
+      tailBlock += `\nСопутствующие заболевания: ${comorbidities.trim()}`;
+    }
     if (entry.isDischarge) {
       tailBlock += `\nРекомендовано: выписка.\nЗамечания: нет.`;
     } else {

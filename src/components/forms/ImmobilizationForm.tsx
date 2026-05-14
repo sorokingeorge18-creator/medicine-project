@@ -48,19 +48,29 @@ function FixationSelector({
         </div>
       </div>
 
-      {value === 'other' && (
+      {(value === 'other' || value === 'cast') && (
         <div className="pl-4 border-l-2 border-brand/20 animate-fade-up">
           <label className="field-label">
-            Описание фиксации <span className="text-negative ml-0.5">*</span>
+            {value === 'cast' ? 'Тип гипсовой повязки' : 'Описание фиксации'}
+            {value === 'other' && <span className="text-negative ml-0.5">*</span>}
           </label>
           <input
             type="text"
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder="Напр.: в шине Крамера, в ортезе..."
+            placeholder={
+              value === 'cast'
+                ? 'задней гипсовой лонгете, циркулярной гипсовой повязке...'
+                : 'Напр.: в шине Крамера, в ортезе...'
+            }
             className="field-input"
           />
-          <p className="field-hint">Подставляется в status localis каждого дневника</p>
+          {value === 'cast' && (
+            <p className="field-hint">Если пусто — будет «гипсовой повязке»</p>
+          )}
+          {value === 'other' && (
+            <p className="field-hint">Подставляется в status localis каждого дневника</p>
+          )}
         </div>
       )}
     </div>
