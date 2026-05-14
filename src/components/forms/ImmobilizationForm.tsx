@@ -60,13 +60,16 @@ function FixationSelector({
             onChange={(e) => onDescriptionChange(e.target.value)}
             placeholder={
               value === 'cast'
-                ? 'задней гипсовой лонгете, циркулярной гипсовой повязке...'
-                : 'Напр.: в шине Крамера, в ортезе...'
+                ? 'задняя гипсовая лонгета, циркулярная гипсовая повязка...'
+                : 'шина Крамера, ортез...'
             }
             className="field-input"
           />
           {value === 'cast' && (
-            <p className="field-hint">Если пусто — будет «гипсовой повязке»</p>
+            <p className="field-hint">Вводите в именительном падеже — склонение автоматическое</p>
+          )}
+          {value === 'other' && (
+            <p className="field-hint">Вводите в именительном падеже — склонение автоматическое</p>
           )}
           {value === 'other' && (
             <p className="field-hint">Подставляется в status localis каждого дневника</p>

@@ -23,6 +23,57 @@ import {
   generateUniqueVitalSigns,
 } from './statusGenerator';
 
+// ─── Склонение: именительный → предложный падеж ──────────────────────────────
+
+/**
+ * Переводит одно слово из именительного падежа в предложный
+ * (для употребления с предлогом «в»: «в гипсовой повязке»).
+ */
+function wordToPrep(word: string): string {
+  // Слова с дефисом: склоняем только последнюю часть (U-образная → U-образной)
+  const dashIdx = word.lastIndexOf('-');
+  if (dashIdx > 0 && dashIdx < word.length - 1) {
+    return word.slice(0, dashIdx + 1) + wordToPrep(word.slice(dashIdx + 1));
+  }
+
+  // Женские прилагательные
+  if (word.endsWith('яя')) return word.slice(0, -2) + 'ей';   // задняя→задней, синяя→синей
+  if (word.endsWith('ая')) return word.slice(0, -2) + 'ой';   // гипсовая→гипсовой, циркулярная→циркулярной
+
+  // Мужские прилагательные (после велярных — твёрдые окончания)
+  if (word.endsWith('кий')) return word.slice(0, -3) + 'ком'; // короткий→коротком
+  if (word.endsWith('гий')) return word.slice(0, -3) + 'гом'; // строгий→строгом
+  if (word.endsWith('хий')) return word.slice(0, -3) + 'хом'; // тихий→тихом
+  // Мягкие / шипящие
+  if (word.endsWith('жий')) return word.slice(0, -3) + 'жем'; // свежий→свежем
+  if (word.endsWith('ший')) return word.slice(0, -3) + 'шем';
+  if (word.endsWith('щий')) return word.slice(0, -3) + 'щем';
+  if (word.endsWith('ний')) return word.slice(0, -3) + 'нем'; // последний→последнем, длинний→нет (длинный covered by -ый)
+  if (word.endsWith('ий'))  return word.slice(0, -2) + 'ем';  // прочие мягкие
+  if (word.endsWith('ый'))  return word.slice(0, -2) + 'ом';  // длинный→длинном, гипсовый→гипсовом
+
+  // Существительные женского рода
+  if (word.endsWith('ка')) return word.slice(0, -2) + 'ке';   // повязка→повязке, лонгетка→лонгетке
+  if (word.endsWith('га')) return word.slice(0, -2) + 'ге';   // книга→книге
+  if (word.endsWith('жа')) return word.slice(0, -2) + 'же';   // вожжа→вожже (редко)
+  if (word.endsWith('та')) return word.slice(0, -1) + 'е';    // лонгета→лонгете
+  if (word.endsWith('на')) return word.slice(0, -1) + 'е';    // шина→шине
+  if (word.endsWith('а'))  return word.slice(0, -1) + 'е';    // общее: шина,рука → ...е
+
+  // Существительные мужского рода на согласную
+  if (/[бвгджзклмнпрстфхцчшщ]$/i.test(word)) return word + 'е'; // гипс→гипсе, ортез→ортезе
+
+  return word; // не изменяем (числа, аббревиатуры и т.п.)
+}
+
+/**
+ * Переводит фразу из именительного падежа в предложный.
+ * Пример: «задняя гипсовая лонгета» → «задней гипсовой лонгете»
+ */
+function toPrep(phrase: string): string {
+  return phrase.trim().split(/\s+/).map(wordToPrep).join(' ');
+}
+
 // ─── Грамматика ───────────────────────────────────────────────────────────────
 
 /** Прилагательное стороны — именительный падеж */
@@ -139,7 +190,9 @@ function buildAdmissionFixLine(
   const ln = limbNom(limbType);
   switch (fixationType) {
     case 'cast': {
-      const castDesc = fixationDescription?.trim() || 'гипсовой повязке';
+      const castDesc = fixationDescription?.trim()
+        ? toPrep(fixationDescription.trim())
+        : 'гипсовой повязке';
       return `${sn} ${ln} в ${castDesc}. Повязка стабильна.`;
     }
     case 'sling':
@@ -147,7 +200,9 @@ function buildAdmissionFixLine(
     case 'deso':
       return `${sn} ${ln} в повязке Дезо. Повязка Дезо в порядке.`;
     case 'other':
-      return fixationDescription ? `${sn} ${ln} ${fixationDescription}.` : '';
+      return fixationDescription
+        ? `${sn} ${ln} в ${toPrep(fixationDescription)}.`
+        : '';
     default:
       return '';
   }
@@ -208,14 +263,16 @@ function buildLocalisPostOp(
       fixStatus = isFirstPostOp ? ` Повязка Дезо в порядке.` : '';
       break;
     case 'cast': {
-      const castDesc = fixationDescription?.trim() || 'гипсовой повязке';
+      const castDesc = fixationDescription?.trim()
+        ? toPrep(fixationDescription.trim())
+        : 'гипсовой повязке';
       fixLine = `${sn} ${ln} в ${castDesc}.`;
       fixStatus = isFirstPostOp ? ` Повязка в порядке.` : '';
       break;
     }
     case 'other':
       fixLine = fixationDescription
-        ? `${sn} ${ln} ${fixationDescription}.`
+        ? `${sn} ${ln} в ${toPrep(fixationDescription)}.`
         : `${sn} ${ln} фиксирована.`;
       fixStatus = '';
       break;
