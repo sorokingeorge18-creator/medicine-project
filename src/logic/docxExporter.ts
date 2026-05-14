@@ -235,8 +235,14 @@ export async function exportToDocx(
     const doc = allDocuments[i];
 
     if (i > 0) {
-      // Разделитель между документами — пустая строка
-      allParagraphs.push(makeEmptyParagraph());
+      const prevDoc = allDocuments[i - 1];
+      if (prevDoc.type === 'preop') {
+        // После предоперационного эпикриза — разрыв страницы
+        allParagraphs.push(makePageBreak());
+      } else {
+        // Между дневниками — пустая строка
+        allParagraphs.push(makeEmptyParagraph());
+      }
     }
 
     const contentParagraphs = textToDocxParagraphs(doc.content);
