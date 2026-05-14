@@ -1,5 +1,5 @@
 import React from 'react';
-import { DiagnosisData, Side, InjuryCause, LimbType } from '../../types';
+import { DiagnosisData, Side, InjuryCause, LimbType, NounGender } from '../../types';
 
 interface Props {
   data: DiagnosisData;
@@ -15,10 +15,19 @@ const INJURY_CAUSES: { value: InjuryCause; label: string }[] = [
   { value: 'other',       label: 'Другая' },
 ];
 
+const NOUN_GENDER_OPTIONS: { value: NounGender; label: string; example: string }[] = [
+  { value: 'masculine', label: 'Мужской / средний', example: 'правого сустава, бедра' },
+  { value: 'feminine',  label: 'Женский',            example: 'правой кости, голени' },
+];
+
 export const DiagnosisForm: React.FC<Props> = ({ data, onChange }) => {
   const update = <K extends keyof DiagnosisData>(field: K, value: DiagnosisData[K]) => {
     onChange({ ...data, [field]: value });
   };
+
+  const sideExample = data.nounGender === 'feminine'
+    ? (data.side === 'right' ? 'правой' : 'левой')
+    : (data.side === 'right' ? 'правого' : 'левого');
 
   return (
     <div className="space-y-6">
@@ -36,28 +45,48 @@ export const DiagnosisForm: React.FC<Props> = ({ data, onChange }) => {
         />
       </div>
 
-      {/* Анатомическая область */}
+      {/* Анатомическая область + род */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="field-label">Анатомическая область <span className="text-negative">*</span></label>
+          <label className="field-label">
+            Область поражения <span className="text-negative">*</span>
+            <span className="text-ink-4 normal-case tracking-normal font-normal ml-1">(родит. падеж)</span>
+          </label>
           <input
             type="text"
             value={data.anatomicalArea}
             onChange={(e) => update('anatomicalArea', e.target.value)}
-            placeholder="плечевая кость, бедро, голень..."
+            placeholder="плечевого сустава, голени, бедра..."
             className="field-input"
           />
+          {data.anatomicalArea && (
+            <p className="field-hint">
+              «отёк <em>{sideExample} {data.anatomicalArea}</em>»
+            </p>
+          )}
         </div>
+
         <div>
-          <label className="field-label">Для status localis <span className="text-ink-4 normal-case tracking-normal font-normal">(родит. падеж)</span></label>
-          <input
-            type="text"
-            value={data.localisArea}
-            onChange={(e) => update('localisArea', e.target.value)}
-            placeholder="плечевого сустава, бедра..."
-            className="field-input"
-          />
-          <p className="field-hint">«в области левого <em>плечевого сустава</em>»</p>
+          <label className="field-label">Род существительного <span className="text-negative">*</span></label>
+          <div className="flex flex-col gap-2 mt-0.5">
+            {NOUN_GENDER_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={`chip justify-start gap-2 ${data.nounGender === opt.value ? 'chip-on' : 'chip-off'}`}
+              >
+                <input
+                  type="radio"
+                  name="nounGender"
+                  value={opt.value}
+                  checked={data.nounGender === opt.value}
+                  onChange={() => update('nounGender', opt.value)}
+                  className="sr-only"
+                />
+                <span className="font-medium">{opt.label}</span>
+                <span className="text-xs opacity-60">— {opt.example}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </div>
 

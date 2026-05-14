@@ -11,6 +11,7 @@ import {
   PostOpFixationType,
   InjuryCause,
   Gender,
+  NounGender,
 } from '../types';
 import {
   calculateDiaryDates,
@@ -33,9 +34,14 @@ function sideNom(side: Side, limbType: LimbType): string {
   return side === 'right' ? 'Правая' : 'Левая';
 }
 
-/** Прилагательное стороны — родительный падеж */
-function sideGen(side: Side): string {
-  return side === 'right' ? 'правой' : 'левой';
+/**
+ * Прилагательное стороны — родительный падеж, согласованное с родом существительного.
+ * masculine/neuter → правого/левого (напр. "сустав", "бедро")
+ * feminine         → правой/левой  (напр. "кость", "голень")
+ */
+function sideGen(side: Side, nounGender: NounGender = 'masculine'): string {
+  if (nounGender === 'feminine') return side === 'right' ? 'правой' : 'левой';
+  return side === 'right' ? 'правого' : 'левого';
 }
 
 
@@ -111,7 +117,7 @@ function buildStatusPraesensRegular(v: VitalTexts, gender: Gender): string {
     `Состояние удовлетворительное. ${subj} ${adj1}, к своему состоянию ${adj2}, в месте, времени и личности ${adj3}. ` +
     `Гемодинамика стабильная. Тоны сердца ясные, ритмичные. ` +
     `АД ${v.bpSystolic}/${v.bpDiastolic} мм. рт. ст. пульс ${v.pulse} уд. в мин., кожные покровы физиологической окраски. ` +
-    `Дыхание везикулярное, проводится во всех отделах. хрипов нет ЧДД ${v.rr}. ` +
+    `Дыхание везикулярное, проводится во всех отделах. Хрипов нет. ЧДД ${v.rr} в мин. ` +
     `Живот мягкий, безболезненный. Перитониальные симптомы отрицательные. ` +
     `Физиологические отправления в порядке. Температура ${temp}.`
   );
@@ -154,9 +160,10 @@ function buildLocalisPreOp(
   localisArea: string,
   admissionFixation: PostOpFixationType,
   admissionFixationDescription: string,
-  edema: string
+  edema: string,
+  nounGender: NounGender = 'masculine'
 ): string {
-  const sg = sideGen(side);
+  const sg = sideGen(side, nounGender);
   const lg = limbGen(limbType);
   const area = localisArea || 'плечевого сустава';
   const fixLine = buildAdmissionFixLine(side, limbType, admissionFixation, admissionFixationDescription);
@@ -177,10 +184,11 @@ function buildLocalisPostOp(
   fixationType: PostOpFixationType,
   fixationDescription: string,
   edema: string,
-  isFirstPostOp: boolean
+  isFirstPostOp: boolean,
+  nounGender: NounGender = 'masculine'
 ): string {
   const sn = sideNom(side, limbType);
-  const sg = sideGen(side);
+  const sg = sideGen(side, nounGender);
   const ln = limbNom(limbType);
   const lg = limbGen(limbType);
   const area = localisArea || 'плечевого сустава';
@@ -216,8 +224,9 @@ function buildLocalisPostOp(
     `Кожный покров в области швов без признаков воспаления. ` +
     `Послеоперационная рана без особенностей, отделяемое – нет.`;
 
+  const prefix = fixLine ? `${fixLine}${fixStatus} ` : '';
   return (
-    `${fixLine}${fixStatus} Отёк ${sg} ${area} ${edema}. ` +
+    `${prefix}Отёк ${sg} ${area} ${edema}. ` +
     `${woundLine} Периферических ишемических и неврологических нарушений в ${sg} ${lg} не выявлено.`
   );
 }
@@ -235,10 +244,11 @@ function buildComplaints(
   isFirstPostOp: boolean,
   side: Side,
   localisArea: string,
-  index: number
+  index: number,
+  nounGender: NounGender = 'masculine'
 ): string {
   const area = localisArea || 'повреждения';
-  const sg = side === 'right' ? 'правого' : 'левого';
+  const sg = sideGen(side, nounGender);
   if (isAdmission) {
     return `на боль в области ${sg} ${area}, купируется анальгетиками.`;
   }
@@ -252,7 +262,7 @@ function buildComplaints(
 
 function buildEdema(isAdmission: boolean, isFirstPostOp: boolean, index: number): string {
   if (isAdmission) {
-    return index % 2 === 0 ? 'отёк умеренный' : 'отёк умеренный, не нарос';
+    return index % 2 === 0 ? 'умеренный' : 'умеренный, не нарос';
   }
   if (isFirstPostOp) {
     return 'выражен умеренно, не нарос';
@@ -298,7 +308,10 @@ function generateDiaryContent(
   vitals: VitalTexts
 ): string {
   const { patient, diagnosis, immobilization, doctors } = formData;
-  const { side, limbType, localisArea, mainDiagnosis, comorbidities } = diagnosis;
+  const { side, limbType, mainDiagnosis, comorbidities } = diagnosis;
+  // localisArea (устар.) → anatomicalArea как fallback
+  const localisArea = diagnosis.localisArea || diagnosis.anatomicalArea || 'плечевого сустава';
+  const nounGender = diagnosis.nounGender || 'masculine';
   // Для дневника поступления используем вычисленное время, иначе — время осмотра по умолчанию
   const time = entry.time || patient.examinationTime || '10:00';
   const dateStr = formatDateShort(entry.date);
@@ -325,7 +338,7 @@ function generateDiaryContent(
   const header = buildDiaryHeader(dateStr, time, diaryTitle, lastName);
 
   // Жалобы
-  const complaints = buildComplaints(isAdmission, isFirstPostOp, side, localisArea, index);
+  const complaints = buildComplaints(isAdmission, isFirstPostOp, side, localisArea, index, nounGender);
 
   // Status praesens
   const praesensText = isAdmission
@@ -340,12 +353,12 @@ function generateDiaryContent(
     ? buildLocalisPostOp(
         side, limbType, localisArea,
         immobilization.postOpFixation, immobilization.fixationDescription,
-        edema, isFirstPostOp
+        edema, isFirstPostOp, nounGender
       )
     : buildLocalisPreOp(
         side, limbType, localisArea,
         immobilization.admissionFixation, immobilization.admissionFixationDescription,
-        edema
+        edema, nounGender
       );
 
   // Диагноз для дневника "с заведующим" (при поступлении — перед жалобами)
@@ -469,12 +482,13 @@ function generatePreopEpicrisisContent(formData: FormData): string {
     `${genderForm(patient.gender, 'Больная адекватна', 'Больной адекватен')}, к своему состоянию ${genderForm(patient.gender, 'критична', 'критичен')}, ` +
     `в месте, времени и личности ${genderForm(patient.gender, 'ориентирована', 'ориентирован')}. ` +
     `Гемодинамика стабильная. Тоны сердца ясные, ритмичные. АД 121/75 мм. рт. ст. пульс 79 уд. в мин., ` +
-    `кожные покровы физиологической окраски. Дыхание везикулярное, проводится во всех отделах. хрипов нет ЧДД 16. ` +
+    `кожные покровы физиологической окраски. Дыхание везикулярное, проводится во всех отделах. Хрипов нет. ЧДД 16 в мин. ` +
     `Живот мягкий, безболезненный. Перитониальные симптомы отрицательные. Физиологические отправления в порядке. Температура 36,4.`;
 
   // Status localis эпикриза
-  const sg = sideGen(diagnosis.side);
-  const area = diagnosis.localisArea || 'плечевого сустава';
+  const nounGender = diagnosis.nounGender || 'masculine';
+  const sg = sideGen(diagnosis.side, nounGender);
+  const area = diagnosis.localisArea || diagnosis.anatomicalArea || 'плечевого сустава';
   const lg = limbGen(diagnosis.limbType);
   const admFixLine = buildAdmissionFixLine(
     diagnosis.side, diagnosis.limbType,

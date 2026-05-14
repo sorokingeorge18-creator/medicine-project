@@ -24,6 +24,14 @@ function isValidTime(val: string): boolean {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(val);
 }
 
+function isValidCalendarDate(display: string): boolean {
+  if (!/^\d{2}\.\d{2}\.\d{4}$/.test(display)) return false;
+  const [d, m, y] = display.split('.').map(Number);
+  if (m < 1 || m > 12) return false;
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+}
+
 const Field: React.FC<{
   label: string;
   required?: boolean;
@@ -49,7 +57,7 @@ const DateField: React.FC<{
 
   useEffect(() => { setDisplay(isoToDisplay(value)); }, [value]);
 
-  const isValid = !display || display.length === 0 || /^\d{2}\.\d{2}\.\d{4}$/.test(display);
+  const isValid = !display || display.length === 0 || isValidCalendarDate(display);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let v = e.target.value.replace(/[^0-9.]/g, '');
@@ -71,7 +79,7 @@ const DateField: React.FC<{
         maxLength={10}
         className={isValid ? 'field-input' : 'field-input-error'}
       />
-      {!isValid && <p className="field-hint text-negative">Формат: ДД.ММ.ГГГГ</p>}
+      {!isValid && <p className="field-hint text-negative">Несуществующая дата — проверьте число и месяц</p>}
     </Field>
   );
 };

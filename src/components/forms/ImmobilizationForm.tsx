@@ -48,18 +48,19 @@ function FixationSelector({
         </div>
       </div>
 
-      {value !== 'none' && (
+      {value === 'other' && (
         <div className="pl-4 border-l-2 border-brand/20 animate-fade-up">
           <label className="field-label">
-            Описание{value === 'other' && <span className="text-negative ml-0.5">*</span>}
+            Описание фиксации <span className="text-negative ml-0.5">*</span>
           </label>
           <input
             type="text"
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder={value === 'other' ? 'Опишите тип фиксации...' : 'Дополнительное описание (необязательно)'}
+            placeholder="Напр.: в шине Крамера, в ортезе..."
             className="field-input"
           />
+          <p className="field-hint">Подставляется в status localis каждого дневника</p>
         </div>
       )}
     </div>

@@ -35,6 +35,7 @@ const INITIAL_FORM: FormData = {
     side: 'left',
     injuryCause: 'household',
     comorbidities: '',
+    nounGender: 'masculine',
   },
   examination: {
     xrayDescription: '',
@@ -62,6 +63,14 @@ const INITIAL_FORM: FormData = {
 // ─── Типы и константы ────────────────────────────────────────────────────────
 
 type TabId = 'patient' | 'diagnosis' | 'examination' | 'operation' | 'immobilization' | 'doctors' | 'documents';
+
+const NEXT_TAB: Partial<Record<TabId, TabId>> = {
+  patient:        'diagnosis',
+  diagnosis:      'examination',
+  examination:    'operation',
+  operation:      'immobilization',
+  immobilization: 'doctors',
+};
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   {
@@ -433,13 +442,28 @@ export default function App() {
         {!isDocMode && (
           <div className="flex-1 min-w-0">
             <AnimatedPane tabKey={activeTab}>
-              <div className="card p-6">
-                {activeTab === 'patient'       && <PatientForm data={formData.patient} onChange={updatePatient} />}
-                {activeTab === 'diagnosis'     && <DiagnosisForm data={formData.diagnosis} onChange={updateDiagnosis} />}
-                {activeTab === 'examination'   && <ExaminationForm data={formData.examination} onChange={updateExamination} />}
-                {activeTab === 'operation'     && <OperationForm data={formData.operation} onChange={updateOperation} />}
+              <div className="card p-6 flex flex-col gap-6">
+                {activeTab === 'patient'        && <PatientForm data={formData.patient} onChange={updatePatient} />}
+                {activeTab === 'diagnosis'      && <DiagnosisForm data={formData.diagnosis} onChange={updateDiagnosis} />}
+                {activeTab === 'examination'    && <ExaminationForm data={formData.examination} onChange={updateExamination} />}
+                {activeTab === 'operation'      && <OperationForm data={formData.operation} onChange={updateOperation} />}
                 {activeTab === 'immobilization' && <ImmobilizationForm data={formData.immobilization} onChange={updateImmobilization} />}
-                {activeTab === 'doctors'       && <DoctorsForm data={formData.doctors} onChange={updateDoctors} />}
+                {activeTab === 'doctors'        && <DoctorsForm data={formData.doctors} onChange={updateDoctors} />}
+
+                {/* Кнопка "Далее" */}
+                {NEXT_TAB[activeTab] && (
+                  <div className="flex justify-end pt-2 border-t border-line">
+                    <button
+                      onClick={() => setActiveTab(NEXT_TAB[activeTab]!)}
+                      className="btn btn-dark btn-sm flex items-center gap-1.5"
+                    >
+                      Далее
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5">
+                        <path d="M6 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </div>
+                )}
               </div>
             </AnimatedPane>
           </div>

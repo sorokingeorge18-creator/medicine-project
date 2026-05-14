@@ -35,15 +35,19 @@ export type InjuryCause =
   | 'industrial'
   | 'other';
 
+/** Грамматический род существительного области поражения */
+export type NounGender = 'masculine' | 'feminine';
+
 /** Данные диагноза */
 export interface DiagnosisData {
   mainDiagnosis: string;
-  anatomicalArea: string;
-  localisArea: string;    // область в родительном падеже: "плечевого сустава"
-  limbType: LimbType;     // верхняя / нижняя конечность
+  anatomicalArea: string;  // родительный падеж: "плечевого сустава", "голени"
+  localisArea: string;     // устаревшее поле, оставлено для обратной совместимости
+  limbType: LimbType;      // верхняя / нижняя конечность
   side: Side;
   injuryCause: InjuryCause;
   comorbidities: string;
+  nounGender: NounGender;  // род существительного (для склонения "правого/правой")
 }
 
 /** Данные обследований */
