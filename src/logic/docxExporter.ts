@@ -235,7 +235,8 @@ export async function exportToDocx(
     const doc = allDocuments[i];
 
     if (i > 0) {
-      allParagraphs.push(makePageBreak());
+      // Разделитель между документами — пустая строка
+      allParagraphs.push(makeEmptyParagraph());
     }
 
     const contentParagraphs = textToDocxParagraphs(doc.content);

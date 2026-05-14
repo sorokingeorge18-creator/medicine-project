@@ -294,13 +294,6 @@ function buildLocalisPostOp(
 
 // ─── Жалобы ───────────────────────────────────────────────────────────────────
 
-// Жалобы для послеоперационных дневников (не первые сутки)
-const COMPLAINTS_POST_OP = [
-  'активно жалоб не предъявляет.',
-  'жалобы на периодические боли в области оперативного вмешательства.',
-  'жалобы на дискомфорт в области оперативного вмешательства.',
-];
-
 function buildComplaints(
   isAdmission: boolean,
   isFirstPostOp: boolean,
@@ -308,6 +301,7 @@ function buildComplaints(
   side: Side,
   localisArea: string,
   index: number,
+  postOpPos: number,    // порядковый номер среди послеоп. дневников (0 = первые сутки)
   nounGender: NounGender = 'masculine'
 ): string {
   const area = localisArea || 'повреждения';
@@ -316,6 +310,7 @@ function buildComplaints(
     return `на боль в области ${sg} ${area}, купируется анальгетиками.`;
   }
   if (isFirstPostOp) {
+    // Первые сутки после операции — умеренные боли
     return `на умеренные боли в области ${sg} ${area}.`;
   }
   if (!isPostOp) {
@@ -327,7 +322,11 @@ function buildComplaints(
     ];
     return opts[index % opts.length];
   }
-  return COMPLAINTS_POST_OP[index % COMPLAINTS_POST_OP.length];
+  // Послеоперационные дневники: градация умеренные → периодические → нет жалоб
+  if (postOpPos === 1) {
+    return 'жалобы на периодические боли в области оперативного вмешательства.';
+  }
+  return 'активно жалоб не предъявляет.';
 }
 
 // ─── Описание отёка ──────────────────────────────────────────────────────────
@@ -376,6 +375,7 @@ function generateDiaryContent(
   entry: DiaryDateEntry,
   index: number,
   isFirstPostOp: boolean,
+  postOpPos: number,
   formData: FormData,
   vitals: VitalTexts
 ): string {
@@ -410,7 +410,7 @@ function generateDiaryContent(
   const header = buildDiaryHeader(dateStr, time, diaryTitle, lastName);
 
   // Жалобы
-  const complaints = buildComplaints(isAdmission, isFirstPostOp, isPostOp, side, localisArea, index, nounGender);
+  const complaints = buildComplaints(isAdmission, isFirstPostOp, isPostOp, side, localisArea, index, postOpPos, nounGender);
 
   // Status praesens
   const praesensText = isAdmission
@@ -655,13 +655,15 @@ export function generateAllDocuments(formData: FormData): {
 
   const firstPostOpIndex = dateEntries.findIndex((e) => e.isPostOp);
 
+  let postOpCounter = 0;
   const diaries: DiaryEntry[] = dateEntries.map((entry, index) => {
     const isFirstPostOp = entry.isPostOp && index === firstPostOpIndex;
     const isPostOp = isAfter(entry.date, operationDate);
+    const postOpPos = isPostOp ? postOpCounter++ : -1;
     const vitals = vitalSignsArr[index];
 
     const content = generateDiaryContent(
-      entry, index, isFirstPostOp, formData, vitals
+      entry, index, isFirstPostOp, postOpPos, formData, vitals
     );
 
     const title =
