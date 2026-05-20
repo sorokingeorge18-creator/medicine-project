@@ -3,6 +3,20 @@ import { DiaryEntry } from '../types';
 import { formatDateShort } from '../logic/dateCalculations';
 import { parseISO } from 'date-fns';
 
+async function fixGrammar(text: string): Promise<string> {
+  const res = await fetch('/api/grammar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    const { error } = await res.json().catch(() => ({ error: 'Ошибка сервера' }));
+    throw new Error(error ?? 'Ошибка сервера');
+  }
+  const { corrected } = await res.json();
+  return corrected as string;
+}
+
 interface Props {
   document: DiaryEntry | null;
   onUpdate: (id: string, content: string) => void;
@@ -11,6 +25,8 @@ interface Props {
 export const DocumentPreview: React.FC<Props> = ({ document, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
+  const [isFixing, setIsFixing] = useState(false);
+  const [fixError, setFixError] = useState<string | null>(null);
 
   useEffect(() => {
     if (document) {
@@ -39,6 +55,24 @@ export const DocumentPreview: React.FC<Props> = ({ document, onUpdate }) => {
   const handleSave = () => { onUpdate(document.id, editContent); setIsEditing(false); };
   const handleCancel = () => { setEditContent(document.content); setIsEditing(false); };
 
+  const handleFixGrammar = async () => {
+    setFixError(null);
+    setIsFixing(true);
+    const source = isEditing ? editContent : document.content;
+    try {
+      const corrected = await fixGrammar(source);
+      if (isEditing) {
+        setEditContent(corrected);
+      } else {
+        onUpdate(document.id, corrected);
+      }
+    } catch (err) {
+      setFixError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Шапка */}
@@ -57,6 +91,25 @@ export const DocumentPreview: React.FC<Props> = ({ document, onUpdate }) => {
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0 ml-4">
+          <button
+            onClick={handleFixGrammar}
+            disabled={isFixing}
+            className="btn btn-sm btn-ghost text-xs text-brand disabled:opacity-50"
+            title="Исправить грамматику с помощью ИИ"
+          >
+            {isFixing ? (
+              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M2 8h2M12 8h2M8 2v2M8 12v2M4.1 4.1l1.4 1.4M10.5 10.5l1.4 1.4M4.1 11.9l1.4-1.4M10.5 5.5l1.4-1.4" strokeLinecap="round"/>
+                <circle cx="8" cy="8" r="2.5"/>
+              </svg>
+            )}
+            {isFixing ? 'Исправляю...' : 'Грамматика'}
+          </button>
+
           {!isEditing ? (
             <button
               onClick={() => { setEditContent(document.content); setIsEditing(true); }}
@@ -82,6 +135,14 @@ export const DocumentPreview: React.FC<Props> = ({ document, onUpdate }) => {
           )}
         </div>
       </div>
+
+      {/* Ошибка грамматики */}
+      {fixError && (
+        <div className="px-5 py-2 bg-negative-light border-b border-negative/20 flex items-center justify-between gap-2">
+          <span className="text-xs text-negative">{fixError}</span>
+          <button onClick={() => setFixError(null)} className="text-negative/60 hover:text-negative text-xs shrink-0">✕</button>
+        </div>
+      )}
 
       {/* Содержимое */}
       <div className="flex-1 overflow-auto">
