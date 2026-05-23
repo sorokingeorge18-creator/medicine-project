@@ -189,42 +189,18 @@ interface VitalTexts {
 }
 
 /**
- * Расширенный status praesens — для дня поступления.
- * Соответствует формату из первичного осмотра с заведующим.
- */
-function buildStatusPraesensAdmission(v: VitalTexts, gender: Gender): string {
-  const temp = v.temperature.toFixed(1).replace('.', ',');
-  const adj1 = genderForm(gender, 'Больная', 'Больной');
-  const adj2 = genderForm(gender, 'ориентирована', 'ориентирован');
-  return (
-    `Состояние удовлетворительное. ${adj1} в сознании, ${adj2} в пространстве, времени и личности. Кожные покровы физиологической окраски, чистые, сухие. ` +
-    `АД ${v.bpSystolic}/${v.bpDiastolic} мм.рт.ст. Ps ${v.pulse} в мин. ЧДД ${v.rr} в мин. Температура тела ${temp}. ` +
-    `Грудная клетка правильной конфигурации, равномерно участвует в акте дыхания; при пальпации эластичная, безболезненная. ` +
-    `Дыхание везикулярное, хрипов нет, одинаковое над симметричными отделами легких. ` +
-    `Тоны сердца приглушенные, ритмичные. ` +
-    `Живот округлый равномерно участвует в акте дыхания, при пальпации мягкий, безболезненный. ` +
-    `Перитониальных симптомов, притупления в отлогих местах нет. ` +
-    `Симптом поколачивания отрицательных с обеих сторон. Физиологические отправления регулярные.`
-  );
-}
-
-/**
- * Сокращённый status praesens — для последующих дневников.
- * Используется с меткой "Status praesens:" в послеоперационных дневниках.
+ * Status praesens — единый формат для всех дневников (по образцу реальных документов).
  */
 function buildStatusPraesensRegular(v: VitalTexts, gender: Gender): string {
-  const temp = v.temperature.toFixed(1).replace('.', ',');
   const subj = genderForm(gender, 'Больная', 'Больной');
   const adj1 = genderForm(gender, 'адекватна', 'адекватен');
-  const adj2 = genderForm(gender, 'критична', 'критичен');
-  const adj3 = genderForm(gender, 'ориентирована', 'ориентирован');
+  const adj2 = genderForm(gender, 'контактна', 'контактен');
   return (
-    `Состояние удовлетворительное. ${subj} ${adj1}, к своему состоянию ${adj2}, в месте, времени и личности ${adj3}. ` +
-    `Гемодинамика стабильная. Тоны сердца ясные, ритмичные. ` +
-    `АД ${v.bpSystolic}/${v.bpDiastolic} мм. рт. ст. пульс ${v.pulse} уд. в мин., кожные покровы физиологической окраски. ` +
-    `Дыхание везикулярное, проводится во всех отделах. Хрипов нет. ЧДД ${v.rr} в мин. ` +
-    `Живот мягкий, безболезненный. Перитониальные симптомы отрицательные. ` +
-    `Физиологические отправления в порядке. Температура ${temp}.`
+    `Состояние удовлетворительное. Болевой синдром купируется анальгетиками. ` +
+    `${subj} ${adj1}, ${adj2}. ` +
+    `Кожные покровы чистые. В лёгких дыхание везикулярное, хрипов нет. ЧДД ${v.rr} в мин. ` +
+    `Тоны сердца ясные, ритмичные, ЧСС ${v.pulse} уд. в мин. ` +
+    `АД ${v.bpSystolic}/${v.bpDiastolic} мм рт. ст. Живот мягкий безболезненный. Стул, диурез в норме.`
   );
 }
 
@@ -280,9 +256,9 @@ function buildLocalisPreOp(
   const fixLine = buildAdmissionFixLine(side, limbType, admissionFixation, admissionFixationDescription);
 
   if (fixLine) {
-    return `${fixLine} Отёк ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет. Лечение получает.`;
+    return `${fixLine} Отёк ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет.`;
   }
-  return `Ось ${sg} ${lg} визуально не нарушена. Отёк ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет. Лечение получает.`;
+  return `Ось ${sg} ${lg} визуально не нарушена. Отёк ${sg} ${area} ${edema}. Ишемических и периферических неврологических расстройств в ${sg} ${lg} нет.`;
 }
 
 /**
@@ -361,7 +337,7 @@ function buildComplaints(
   const area = localisArea || 'повреждения';
   const sg = sideGen(side, nounGender);
   if (isAdmission) {
-    return `на боль в области ${sg} ${area}, купируется анальгетиками.`;
+    return `на умеренные боли в области ${sg} ${area}.`;
   }
   if (isFirstPostOp) {
     // Первые сутки после операции — умеренные боли
@@ -420,7 +396,7 @@ function buildDiaryHeader(
   title: string,
   lastName: string
 ): string {
-  return `${dateStr} ${time}      ${title}      ${lastName}`;
+  return `${lastName}\n${dateStr}  ${time}  ${title}`;
 }
 
 // ─── Основная генерация дневника ──────────────────────────────────────────────
@@ -435,10 +411,8 @@ function generateDiaryContent(
 ): string {
   const { patient, diagnosis, immobilization, doctors } = formData;
   const { side, limbType, mainDiagnosis, comorbidities } = diagnosis;
-  // localisArea (устар.) → anatomicalArea как fallback
   const localisArea = diagnosis.localisArea || diagnosis.anatomicalArea || 'плечевого сустава';
   const nounGender = diagnosis.nounGender || 'masculine';
-  // Для дневника поступления используем вычисленное время, иначе — время осмотра по умолчанию
   const time = entry.time || patient.examinationTime || '10:00';
   const dateStr = formatDateShort(entry.date);
   const lastName = patient.lastName;
@@ -447,141 +421,68 @@ function generateDiaryContent(
   const isAdmission = entry.isAdmission;
   const isPostOp = isAfter(entry.date, operationDate);
 
-  // Подбираем заголовок дневника
+  // Fix 2: Правильные названия дневников
   let diaryTitle: string;
   if (entry.type === 'withHead') {
-    if (isAdmission) {
-      diaryTitle = `Первичный осмотр совместно с заведующим отделением ${surnameInstrumental(doctors.headName)}`;
-    } else {
-      diaryTitle = `Осмотр совместно с заведующим отделением ${surnameInstrumental(doctors.headName)}`;
-    }
+    diaryTitle = isAdmission
+      ? 'Первичный осмотр совместно с зав. отделением'
+      : 'Обход с зав. отделением';
   } else if (isFirstPostOp) {
-    diaryTitle = 'Осмотр лечащего врача (первые сутки после операции)';
+    diaryTitle = 'первые сутки после операции';
   } else {
-    diaryTitle = 'Осмотр лечащего врача';
+    diaryTitle = 'дневник';
   }
 
   const header = buildDiaryHeader(dateStr, time, diaryTitle, lastName);
-
-  // Жалобы
   const complaints = buildComplaints(isAdmission, isFirstPostOp, isPostOp, side, localisArea, index, postOpPos, nounGender);
-
-  // Status praesens
-  const praesensText = isAdmission
-    ? buildStatusPraesensAdmission(vitals, patient.gender)
-    : buildStatusPraesensRegular(vitals, patient.gender);
-
-  // Отёк
+  // Fix 3: Единый короткий format praesens для всех дневников
+  const praesensText = buildStatusPraesensRegular(vitals, patient.gender);
   const edema = buildEdema(isAdmission, isFirstPostOp, index);
 
-  // Status localis
   const localis = isPostOp
-    ? buildLocalisPostOp(
-        side, limbType, localisArea,
-        immobilization.postOpFixation, immobilization.fixationDescription,
-        edema, isFirstPostOp, nounGender
-      )
-    : buildLocalisPreOp(
-        side, limbType, localisArea,
-        immobilization.admissionFixation, immobilization.admissionFixationDescription,
-        edema, nounGender
-      );
+    ? buildLocalisPostOp(side, limbType, localisArea, immobilization.postOpFixation, immobilization.fixationDescription, edema, isFirstPostOp, nounGender)
+    : buildLocalisPreOp(side, limbType, localisArea, immobilization.admissionFixation, immobilization.admissionFixationDescription, edema, nounGender);
 
-  // Диагноз для дневника "с заведующим" (при поступлении — перед жалобами)
-  const diagnosisLineAdmission =
-    entry.type === 'withHead' && isAdmission
-      ? `\nДиагноз: ${mainDiagnosis}\n`
-      : '';
-
-  // Раздел назначений / завершения
-  const postOpBlock =
-    isPostOp
-      ? `\nЛечение по листу назначений получает.\nЛФК с методистом.`
-      : '';
-
-  // Для дневников "с заведующим" — диагноз и рекомендации ПОСЛЕ localis
-  let tailBlock = '';
-  if (entry.type === 'withHead' && !isAdmission) {
-    tailBlock += `\nДиагноз: ${mainDiagnosis}`;
-    if (comorbidities?.trim()) {
-      tailBlock += `\nСопутствующие заболевания: ${comorbidities.trim()}`;
-    }
-    if (entry.isDischarge) {
-      tailBlock += `\nРекомендовано: выписка.\nЗамечания: нет.`;
-    } else {
-      tailBlock += `\nРекомендовано: дальнейшее наблюдение.\nЗамечания: нет.`;
-    }
-  }
-
-  // Строка выписки
-  const dischargeBlock =
-    entry.isDischarge
-      ? `\n\nВ дальнейшем стационарном лечении не нуждается, рекомендации даны, выписка для наблюдения в травмпункте по месту жительства.`
-      : '';
-
-  // Рекомендация для первичного с заведующим (день поступления)
-  const admissionRec =
-    entry.type === 'withHead' && isAdmission
-      ? `\nРекомендовано: обследование для решения тактики лечения.`
-      : '';
-
-  // Подписи
   const includeHead = entry.type === 'withHead';
-  const signatures = buildSignatures(
-    doctors.residentName,
-    doctors.attendingName,
-    doctors.headName,
-    includeHead
-  );
+  const signatures = buildSignatures(doctors.residentName, doctors.attendingName, doctors.headName, includeHead);
 
-  // Сборка документа
-  // Структура зависит от типа дня
-  if (isAdmission) {
-    // Формат: первичный осмотр с заведующим
-    return [
-      header,
-      diagnosisLineAdmission.trim() ? `\n${diagnosisLineAdmission.trim()}` : '',
-      `\nЖалобы: ${complaints}`,
-      `\n${praesensText}`,
-      `\nStatus localis: ${localis}`,
-      admissionRec,
-      `\n${signatures}`,
-    ]
-      .filter(Boolean)
-      .join('\n');
-  }
+  // Fix 6: Единая структура — Жалобы → praesens → localis → Лечение → [ЛФК] → [Диагноз] → ...
+  const praesensLabel = isPostOp ? 'Status praesens' : 'St.praesens';
+  const parts: string[] = [header];
+  parts.push(`\nЖалобы: ${complaints}`);
+  parts.push(`\n${praesensLabel}: ${praesensText}`);
+  parts.push(`\nStatus localis: ${localis}`);
 
+  // Fix 5: "Лечение получает" для всех дневников
   if (isPostOp) {
-    // Формат: послеоперационный дневник
-    // Status praesens имеет метку
-    return [
-      header,
-      `\nЖалобы: ${complaints}`,
-      `\nStatus praesens: ${praesensText}`,
-      `\nStatus localis: ${localis}`,
-      postOpBlock,
-      tailBlock,
-      dischargeBlock,
-      `\n${signatures}`,
-    ]
-      .filter(Boolean)
-      .join('\n');
+    parts.push(`\nЛечение по листу назначений получает.\nЛФК с методистом.`);
+  } else {
+    parts.push(`\nЛечение по листу назначений получает.`);
   }
 
-  // Предоперационный плановый дневник (между поступлением и операцией)
-  return [
-    header,
-    entry.type === 'withHead'
-      ? `\nДиагноз: ${mainDiagnosis}\n`
-      : '',
-    `\nЖалобы: ${complaints}`,
-    `\n${praesensText}`,
-    `\nStatus localis: ${localis}`,
-    tailBlock,
-    `\n${signatures}`,
-  ]
-    .filter(Boolean)
-    .join('\n');
+  // Диагноз и рекомендации только для дневников с заведующим
+  if (entry.type === 'withHead') {
+    parts.push(`\nДиагноз: ${mainDiagnosis}`);
+    if (!isAdmission && comorbidities?.trim()) {
+      parts.push(`\nСопутствующие заболевания: ${comorbidities.trim()}`);
+    }
+    const rec = isAdmission
+      ? 'обследование для решения тактики лечения.'
+      : entry.isDischarge
+      ? 'выписка.'
+      : 'дальнейшее наблюдение.';
+    parts.push(`\nРекомендовано: ${rec}`);
+    parts.push(`\nЗамечания: нет.`);
+  }
+
+  // Fix 7: Правильный текст выписки
+  if (entry.isDischarge) {
+    parts.push(`\n\nВ дальнейшем лечении в травматологическом отделении не нуждается. Выписывается в удовлетворительном состоянии под наблюдение травматолога по месту жительства.`);
+  }
+
+  parts.push(`\n${signatures}`);
+
+  return parts.join('\n');
 }
 
 // ─── Предоперационный эпикриз ─────────────────────────────────────────────────

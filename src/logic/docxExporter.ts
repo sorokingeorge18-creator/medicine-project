@@ -47,7 +47,6 @@ const BOLD_LABELS = [
 // Строки, которые жирные целиком
 const BOLD_FULL_LINES = [
   'ПРЕДОПЕРАЦИОННЫЙ ЭПИКРИЗ',
-  'В дальнейшем стационарном лечении не нуждается',
 ];
 
 // Метки, которые подчёркнуты (заголовки разделов в эпикризе)
@@ -100,6 +99,12 @@ function parseLineRuns(line: string): TextRun[] {
     }
   }
 
+  // Отдельная строка с фамилией врача (заголовок дневника, первая строка)
+  // Формат: "Голышева" или "Иванов-Петров" — одно кириллическое слово, жирное
+  if (/^[А-ЯЁ][а-яёА-ЯЁ]*(-[А-ЯЁа-яё]+)?$/.test(line.trim())) {
+    return [makeRun(line.trim(), true)];
+  }
+
   // Поиск жирной метки в начале строки
   for (const label of BOLD_LABELS) {
     if (line.startsWith(label)) {
@@ -135,19 +140,6 @@ function parseLineRuns(line: string): TextRun[] {
         makeRun(after, false),
       ];
     }
-  }
-
-  // Заголовок дневника: первая строка с датой и фамилией
-  // Формат: "30.10.2025 10:00      Первичный осмотр...      Голышева"
-  // Фамилия в конце — жирная
-  const headerMatch = line.match(/^(\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}\s+)(.*?)\s{2,}(\S+)$/);
-  if (headerMatch) {
-    return [
-      makeRun(headerMatch[1], false),
-      makeRun(headerMatch[2], false),
-      makeRun('      ', false),
-      makeRun(headerMatch[3], true),
-    ];
   }
 
   return [makeRun(line, false)];
