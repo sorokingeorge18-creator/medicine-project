@@ -145,17 +145,19 @@ export const DocumentPreview: React.FC<Props> = ({ document, onUpdate }) => {
       )}
 
       {/* Содержимое */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto bg-canvas/60">
         {isEditing ? (
-          <textarea
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            className="w-full h-full min-h-[500px] px-7 py-5 text-sm font-mono text-ink bg-surface border-0 focus:outline-none resize-none leading-relaxed"
-            spellCheck
-          />
+          <div className="document-sheet">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="document-text w-full min-h-[500px] bg-transparent border-0 focus:outline-none resize-none"
+              spellCheck
+            />
+          </div>
         ) : (
-          <div className="px-7 py-5">
-            <pre className="text-sm text-ink whitespace-pre-wrap font-mono leading-relaxed">
+          <div className="document-sheet">
+            <pre className="document-text font-serif">
               {document.content}
             </pre>
           </div>

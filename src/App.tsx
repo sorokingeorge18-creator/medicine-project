@@ -287,19 +287,19 @@ export default function App() {
     <div className="min-h-screen bg-canvas font-sans flex flex-col">
 
       {/* ── Шапка ──────────────────────────────────────────────────────── */}
-      <header className="bg-surface border-b border-line sticky top-0 z-20">
+      <header className="bg-surface/80 backdrop-blur-xl border-b border-line/80 sticky top-0 z-20">
         <div className="max-w-screen-2xl mx-auto px-5 h-14 flex items-center justify-between gap-4">
 
           {/* Логотип */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-7 h-7 bg-ink rounded-md flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 shadow-btn-dark bg-gradient-to-br from-[#2A4A78] to-[#16294A]">
               <svg viewBox="0 0 14 14" fill="none" className="w-4 h-4">
                 <path d="M7 2v10M2 7h10" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
               </svg>
             </div>
             <div className="leading-tight">
-              <span className="text-sm font-semibold text-ink">Мед. документы</span>
-              <span className="text-xs text-ink-3 ml-2 hidden sm:inline">Травматология · Ортопедия</span>
+              <span className="text-sm font-semibold text-ink tracking-[-0.01em]">Мед. документы</span>
+              <span className="text-[11px] text-ink-3 ml-2 hidden sm:inline uppercase tracking-[0.08em]">Травматология · Ортопедия</span>
             </div>
           </div>
 

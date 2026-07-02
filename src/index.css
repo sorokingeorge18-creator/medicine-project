@@ -10,33 +10,38 @@
   body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-color: #F1EFE9;
-    color: #111318;
+    color: #171D2B;
+    background-color: #F5F3ED;
+    background-image:
+      radial-gradient(1200px 500px at 15% -10%, rgba(31,58,95,0.05), transparent 60%),
+      radial-gradient(900px 400px at 95% 0%, rgba(150,105,15,0.04), transparent 55%);
+    background-attachment: fixed;
   }
 
   :focus-visible {
-    outline: 2px solid #2563EB;
+    outline: 2px solid #1F3A5F;
     outline-offset: 2px;
     border-radius: 4px;
   }
 
   ::selection {
-    background-color: #BFDBFE;
-    color: #111318;
+    background-color: #D6E0EE;
+    color: #171D2B;
   }
 }
 
 @layer components {
   /* ─── Labels ─────────────────────────────────────────────────────── */
   .field-label {
-    @apply block text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5 leading-none;
+    @apply block text-[10.5px] font-semibold text-ink-3 uppercase tracking-[0.09em] mb-1.5 leading-none;
   }
 
   /* ─── Inputs ─────────────────────────────────────────────────────── */
   .field-input {
-    @apply w-full border border-line rounded-lg px-3 py-2.5 text-sm text-ink bg-surface
+    @apply w-full border border-line rounded-lg px-3.5 py-2.5 text-sm text-ink bg-surface
     placeholder:text-ink-4 shadow-input
-    focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10
+    hover:border-line-strong
+    focus:outline-none focus:border-brand/60 focus:ring-[3px] focus:ring-brand/10 focus:shadow-none
     transition-all duration-150;
   }
 
@@ -46,15 +51,16 @@
 
   /* ─── Textareas ──────────────────────────────────────────────────── */
   .field-textarea {
-    @apply w-full border border-line rounded-lg px-3 py-2.5 text-sm text-ink bg-surface
-    placeholder:text-ink-4 resize-none shadow-input
-    focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/10
+    @apply w-full border border-line rounded-lg px-3.5 py-2.5 text-sm text-ink bg-surface
+    placeholder:text-ink-4 resize-none shadow-input leading-relaxed
+    hover:border-line-strong
+    focus:outline-none focus:border-brand/60 focus:ring-[3px] focus:ring-brand/10 focus:shadow-none
     transition-all duration-150;
   }
 
   /* ─── Section title ──────────────────────────────────────────────── */
   .section-title {
-    @apply text-base font-semibold text-ink mb-5 pb-3 border-b border-line;
+    @apply text-[17px] font-semibold text-ink tracking-[-0.01em] mb-5 pb-3.5 border-b border-line-subtle;
   }
 
   /* ─── Cards ──────────────────────────────────────────────────────── */
@@ -73,11 +79,12 @@
   .btn-md { @apply btn text-sm px-4 py-2; }
 
   .btn-dark {
-    @apply bg-ink text-white hover:bg-ink-2;
+    @apply text-white shadow-btn-dark hover:brightness-110 active:shadow-none;
+    background-image: linear-gradient(180deg, #24406A 0%, #1F3A5F 55%, #1A3253 100%);
   }
 
   .btn-ghost {
-    @apply border border-line text-ink-2 bg-surface hover:bg-canvas hover:text-ink hover:border-line-strong;
+    @apply border border-line text-ink-2 bg-surface/70 hover:bg-surface hover:text-ink hover:border-line-strong hover:shadow-input;
   }
 
   .btn-brand {
@@ -107,11 +114,11 @@
   }
 
   .chip-on {
-    @apply border-brand/40 bg-brand-light text-brand;
+    @apply border-brand/50 bg-brand-light text-brand shadow-[inset_0_0_0_1px_rgba(31,58,95,0.25)];
   }
 
   .chip-off {
-    @apply border-line text-ink-2 bg-surface hover:border-line-strong hover:text-ink hover:bg-canvas;
+    @apply border-line text-ink-2 bg-surface hover:border-line-strong hover:text-ink hover:bg-canvas/60;
   }
 
   /* ─── Inline hint ────────────────────────────────────────────────── */
@@ -120,7 +127,7 @@
   }
 
   .hint-block {
-    @apply border-l-2 border-brand/25 bg-brand-light/40 px-3 py-2.5 rounded-r-lg text-xs text-ink-2 leading-relaxed;
+    @apply border-l-2 border-brand/30 bg-brand-light/50 px-3.5 py-2.5 rounded-r-lg text-xs text-ink-2 leading-relaxed;
   }
 
   /* ─── Nav item ───────────────────────────────────────────────────── */
@@ -130,11 +137,20 @@
   }
 
   .nav-item-active {
-    @apply text-brand bg-brand-light;
+    @apply text-brand bg-surface shadow-card;
   }
 
   .nav-item-inactive {
-    @apply text-ink-2 hover:text-ink hover:bg-canvas;
+    @apply text-ink-2 hover:text-ink hover:bg-surface/60;
+  }
+
+  /* ─── Document sheet (предпросмотр как бумажный лист) ────────────── */
+  .document-sheet {
+    @apply mx-auto my-6 max-w-[740px] bg-surface rounded-lg shadow-sheet px-10 py-9;
+  }
+
+  .document-text {
+    @apply font-serif text-[15px] text-ink whitespace-pre-wrap leading-[1.75];
   }
 }
 
