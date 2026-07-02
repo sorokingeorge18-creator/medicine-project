@@ -10,7 +10,6 @@ import { DocumentList } from './components/DocumentList';
 import { DocumentPreview } from './components/DocumentPreview';
 import { SavedCases } from './components/SavedCases';
 import { generateAllDocuments } from './logic/documentGenerator';
-import { exportToDocx } from './logic/docxExporter';
 
 // ─── Начальные данные ────────────────────────────────────────────────────────
 
@@ -135,8 +134,13 @@ function loadCases(): SavedCase[] {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
   catch { return []; }
 }
-function saveCases(cases: SavedCase[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+function saveCases(cases: SavedCase[]): boolean {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ─── AnimatedPane ─────────────────────────────────────────────────────────────
@@ -233,7 +237,11 @@ export default function App() {
   const handleExport = useCallback(async () => {
     if (diaries.length === 0 && !preopEpicrisis) { setErrors(['Сначала сгенерируйте документы']); setShowErrors(true); return; }
     setIsExporting(true);
-    try { await exportToDocx(formData, diaries, preopEpicrisis); showSuccessMsg('Файл DOCX скачан'); }
+    try {
+      const { exportToDocx } = await import('./logic/docxExporter');
+      await exportToDocx(formData, diaries, preopEpicrisis);
+      showSuccessMsg('Файл DOCX скачан');
+    }
     catch (e) { setErrors([String(e)]); setShowErrors(true); }
     finally { setIsExporting(false); }
   }, [formData, diaries, preopEpicrisis]);
@@ -241,8 +249,13 @@ export default function App() {
   const handleSaveCase = useCallback((name: string) => {
     const nc: SavedCase = { id: Date.now().toString(), name, savedAt: new Date().toISOString(), formData };
     const updated = [nc, ...savedCases].slice(0, 20);
-    setSavedCases(updated); saveCases(updated);
-    showSuccessMsg(`Случай «${name}» сохранён`);
+    setSavedCases(updated);
+    if (saveCases(updated)) {
+      showSuccessMsg(`Случай «${name}» сохранён`);
+    } else {
+      setErrors(['Не удалось сохранить случай: хранилище браузера переполнено']);
+      setShowErrors(true);
+    }
   }, [formData, savedCases]);
 
   const handleLoadCase = useCallback((c: SavedCase) => {
@@ -256,9 +269,11 @@ export default function App() {
     setSavedCases(updated); saveCases(updated);
   }, [savedCases]);
 
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function showSuccessMsg(msg: string) {
     setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(''), 3000);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setSuccessMessage(''), 3000);
   }
 
   const hasDocuments = diaries.length > 0 || preopEpicrisis !== null;

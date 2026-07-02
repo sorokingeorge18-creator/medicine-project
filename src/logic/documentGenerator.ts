@@ -130,12 +130,8 @@ function surnameInstrumental(fullName: string): string {
 
 // ─── Грамматика ───────────────────────────────────────────────────────────────
 
-/** Прилагательное стороны — именительный падеж */
-function sideNom(side: Side, limbType: LimbType): string {
-  // Верхняя/нижняя конечность — женский род
-  if (limbType === 'upper' || limbType === 'lower') {
-    return side === 'right' ? 'Правая' : 'Левая';
-  }
+/** Прилагательное стороны — именительный падеж (конечность — женский род) */
+function sideNom(side: Side): string {
   return side === 'right' ? 'Правая' : 'Левая';
 }
 
@@ -216,7 +212,7 @@ function buildAdmissionFixLine(
   fixationType: PostOpFixationType,
   fixationDescription: string
 ): string {
-  const sn = sideNom(side, limbType);
+  const sn = sideNom(side);
   const ln = limbNom(limbType);
   switch (fixationType) {
     case 'cast': {
@@ -274,7 +270,7 @@ function buildLocalisPostOp(
   isFirstPostOp: boolean,
   nounGender: NounGender = 'masculine'
 ): string {
-  const sn = sideNom(side, limbType);
+  const sn = sideNom(side);
   const sg = sideGen(side, nounGender);
   const ln = limbNom(limbType);
   const lg = limbGen(limbType);
@@ -533,14 +529,12 @@ function generatePreopEpicrisisContent(formData: FormData): string {
   }
 
   // Блок обследований
-  let examBlock = '';
+  const examArea = diagnosis.localisArea ? ` ${diagnosis.localisArea}` : '';
+  let examBlock: string;
   if (examination.ctPerformed && examination.ctDescription) {
-    examBlock = `На РГ и КТ ${diagnosis.localisArea ? diagnosis.localisArea + ':' : ':'} ${examination.xrayDescription}`;
-    if (examination.ctDescription) {
-      examBlock += ` ${examination.ctDescription}`;
-    }
+    examBlock = `На РГ и КТ${examArea}: ${examination.xrayDescription} ${examination.ctDescription}`;
   } else {
-    examBlock = `На рентгенограммах ${diagnosis.localisArea ? diagnosis.localisArea + ':' : ':'} ${examination.xrayDescription}`;
+    examBlock = `На рентгенограммах${examArea}: ${examination.xrayDescription}`;
   }
 
   const lines = [

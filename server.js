@@ -6,6 +6,7 @@ import Anthropic from '@anthropic-ai/sdk';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 const port = process.env.PORT || 3000;
+const MAX_TEXT_LENGTH = 20000;
 
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(join(__dirname, 'dist')));
@@ -14,6 +15,9 @@ app.post('/api/grammar', async (req, res) => {
   const { text } = req.body;
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'Текст не передан' });
+  }
+  if (text.length > MAX_TEXT_LENGTH) {
+    return res.status(413).json({ error: `Текст слишком длинный (максимум ${MAX_TEXT_LENGTH} символов)` });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -45,7 +49,8 @@ ${text}`,
       ],
     });
 
-    const corrected = message.content[0]?.text ?? text;
+    const textBlock = message.content.find((block) => block.type === 'text');
+    const corrected = textBlock?.text ?? text;
     res.json({ corrected });
   } catch (err) {
     console.error('Claude API error:', err);

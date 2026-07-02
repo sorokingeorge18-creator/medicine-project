@@ -59,20 +59,6 @@ export function generateVitalSigns(seed: number): VitalSigns {
 }
 
 /**
- * Форматирует показатели жизнедеятельности в строку status praesens.
- */
-export function formatStatusPraesens(vitals: VitalSigns): string {
-  const tempStr = vitals.temperature.toFixed(1).replace('.', ',');
-  return (
-    `Состояние удовлетворительное. Сознание ясное. Кожные покровы обычной окраски. ` +
-    `АД ${vitals.bpSystolic}/${vitals.bpDiastolic} мм рт. ст., ` +
-    `Ps ${vitals.pulse} в мин., ` +
-    `ЧДД ${vitals.rr} в мин., ` +
-    `температура тела ${tempStr} °C.`
-  );
-}
-
-/**
  * Генерирует набор уникальных показателей для массива дневников.
  * Гарантирует, что все наборы отличаются.
  */
