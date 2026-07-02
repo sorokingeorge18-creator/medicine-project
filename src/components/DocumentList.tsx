@@ -50,7 +50,7 @@ export const DocumentList: React.FC<Props> = ({ diaries, preopEpicrisis, selecte
         {allDocs.length} {allDocs.length === 1 ? 'документ' : allDocs.length < 5 ? 'документа' : 'документов'}
       </p>
 
-      {allDocs.map((doc) => {
+      {allDocs.map((doc, index) => {
         const dateStr = formatDateShort(parseISO(doc.date));
         const isSelected = doc.id === selectedId;
         const typeLabel = getTypeLabel(doc);
@@ -60,8 +60,10 @@ export const DocumentList: React.FC<Props> = ({ diaries, preopEpicrisis, selecte
           <button
             key={doc.id}
             onClick={() => onSelect(doc.id)}
+            style={{ animationDelay: `${index * 45}ms` }}
             className={`
-              relative w-full text-left rounded-lg border transition-all duration-150 overflow-hidden
+              animate-card-in relative w-full text-left rounded-lg border transition-all duration-150 overflow-hidden
+              hover:-translate-y-px
               ${isSelected
                 ? 'bg-brand-light border-brand/25'
                 : 'bg-surface border-line hover:border-line-strong hover:bg-canvas'

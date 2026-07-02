@@ -156,7 +156,7 @@ export const DocumentPreview: React.FC<Props> = ({ document, onUpdate }) => {
             />
           </div>
         ) : (
-          <div className="document-sheet">
+          <div key={document.id} className="document-sheet animate-sheet-in">
             <pre className="document-text font-serif">
               {document.content}
             </pre>

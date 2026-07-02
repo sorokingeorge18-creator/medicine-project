@@ -198,6 +198,7 @@ export default function App() {
   const [errors, setErrors] = useState<string[]>([]);
   const [showErrors, setShowErrors] = useState(false);
   const [savedCases, setSavedCases] = useState<SavedCase[]>(loadCases);
+  const [genKey, setGenKey] = useState(0);
   const [showSavedCases, setShowSavedCases] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -219,6 +220,7 @@ export default function App() {
       setPreopEpicrisis(result.preopEpicrisis);
       const first = result.preopEpicrisis ?? result.diaries[0] ?? null;
       setSelectedDocId(first?.id ?? null);
+      setGenKey((k) => k + 1);
       setActiveTab('documents');
       setIsGenerating(false);
       showSuccessMsg(`Готово: ${result.diaries.length} дневников${result.preopEpicrisis ? ' + эпикриз' : ''}`);
@@ -488,12 +490,12 @@ export default function App() {
         {isDocMode && (
           <>
             {/* Предпросмотр */}
-            <div className="flex-1 min-w-0 card overflow-hidden flex flex-col">
+            <div className="flex-1 min-w-0 card overflow-hidden flex flex-col animate-fade-up">
               <DocumentPreview document={selectedDocument} onUpdate={handleDocumentUpdate} />
             </div>
 
             {/* Список документов */}
-            <div className="w-60 shrink-0 card flex flex-col">
+            <div className="w-60 shrink-0 card flex flex-col animate-fade-up" style={{ animationDelay: '60ms' }}>
               <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-line">
                 <p className="field-label mb-0">Документы</p>
                 {hasDocuments && (
@@ -511,6 +513,7 @@ export default function App() {
               </div>
               <div className="px-3 py-3 flex-1 overflow-y-auto">
                 <DocumentList
+                  key={genKey}
                   diaries={diaries}
                   preopEpicrisis={preopEpicrisis}
                   selectedId={selectedDocId}
