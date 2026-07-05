@@ -130,9 +130,29 @@ function validateForm(data: FormData): string[] {
 // ─── localStorage ────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'med_docs_saved_cases_v2';
+const DRAFT_KEY = 'med_docs_draft_v1';
+
 function loadCases(): SavedCase[] {
   try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
   catch { return []; }
+}
+
+/** Восстанавливает черновик формы; сливает с INITIAL_FORM на случай изменения схемы */
+function loadDraft(): FormData | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d || typeof d !== 'object' || !d.patient) return null;
+    return {
+      patient: { ...INITIAL_FORM.patient, ...d.patient },
+      diagnosis: { ...INITIAL_FORM.diagnosis, ...d.diagnosis },
+      examination: { ...INITIAL_FORM.examination, ...d.examination },
+      operation: { ...INITIAL_FORM.operation, ...d.operation },
+      immobilization: { ...INITIAL_FORM.immobilization, ...d.immobilization },
+      doctors: { ...INITIAL_FORM.doctors, ...d.doctors },
+    };
+  } catch { return null; }
 }
 function saveCases(cases: SavedCase[]): boolean {
   try {
@@ -189,7 +209,7 @@ const StatusDot: React.FC<{ label: string; ok: boolean }> = ({ label, ok }) => (
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('patient');
-  const [formData, setFormData] = useState<FormData>(INITIAL_FORM);
+  const [formData, setFormData] = useState<FormData>(() => loadDraft() ?? INITIAL_FORM);
   const [diaries, setDiaries] = useState<DiaryEntry[]>([]);
   const [preopEpicrisis, setPreopEpicrisis] = useState<DiaryEntry | null>(null);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
@@ -202,6 +222,15 @@ export default function App() {
   const [showSavedCases, setShowSavedCases] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
+  // Автосохранение черновика формы (переживает перезагрузку страницы)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(formData)); }
+      catch { /* переполнение хранилища — черновик best-effort */ }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [formData]);
+
   const updatePatient = useCallback((p: FormData['patient']) => setFormData((d) => ({ ...d, patient: p })), []);
   const updateDiagnosis = useCallback((p: FormData['diagnosis']) => setFormData((d) => ({ ...d, diagnosis: p })), []);
   const updateExamination = useCallback((p: FormData['examination']) => setFormData((d) => ({ ...d, examination: p })), []);
@@ -212,6 +241,10 @@ export default function App() {
   const handleGenerate = useCallback(() => {
     const errs = validateForm(formData);
     if (errs.length > 0) { setErrors(errs); setShowErrors(true); return; }
+    const hasEdits = diaries.some((d) => d.isEdited) || preopEpicrisis?.isEdited;
+    if (hasEdits && !confirm('Есть вручную отредактированные документы — при перегенерации правки будут потеряны. Продолжить?')) {
+      return;
+    }
     setShowErrors(false); setErrors([]);
     setIsGenerating(true);
     setTimeout(() => {
@@ -225,7 +258,7 @@ export default function App() {
       setIsGenerating(false);
       showSuccessMsg(`Готово: ${result.diaries.length} дневников${result.preopEpicrisis ? ' + эпикриз' : ''}`);
     }, 150);
-  }, [formData]);
+  }, [formData, diaries, preopEpicrisis]);
 
   const handleDocumentUpdate = useCallback((id: string, content: string) => {
     if (preopEpicrisis && preopEpicrisis.id === id) {
@@ -323,7 +356,7 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => { if (confirm('Очистить все данные формы?')) { setFormData(INITIAL_FORM); setDiaries([]); setPreopEpicrisis(null); setSelectedDocId(null); setActiveTab('patient'); }}}
+              onClick={() => { if (confirm('Очистить все данные формы?')) { localStorage.removeItem(DRAFT_KEY); setFormData(INITIAL_FORM); setDiaries([]); setPreopEpicrisis(null); setSelectedDocId(null); setActiveTab('patient'); }}}
               className="btn btn-sm btn-ghost"
             >
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">

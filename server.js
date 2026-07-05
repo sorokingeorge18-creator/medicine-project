@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import Anthropic from '@anthropic-ai/sdk';
@@ -8,10 +9,21 @@ const app = express();
 const port = process.env.PORT || 3000;
 const MAX_TEXT_LENGTH = 20000;
 
+// Railway/прокси: доверяем первому прокси, чтобы req.ip был реальным IP клиента
+app.set('trust proxy', 1);
+
 app.use(express.json({ limit: '100kb' }));
 app.use(express.static(join(__dirname, 'dist')));
 
-app.post('/api/grammar', async (req, res) => {
+const grammarLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Слишком много запросов — попробуйте через минуту' },
+});
+
+app.post('/api/grammar', grammarLimiter, async (req, res) => {
   const { text } = req.body;
   if (!text || typeof text !== 'string') {
     return res.status(400).json({ error: 'Текст не передан' });
