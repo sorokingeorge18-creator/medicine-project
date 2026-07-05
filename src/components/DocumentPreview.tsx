@@ -1,21 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { DiaryEntry } from '../types';
 import { formatDateShort } from '../logic/dateCalculations';
+import { fixGrammarText } from '../logic/grammarApi';
 import { parseISO } from 'date-fns';
-
-async function fixGrammar(text: string): Promise<string> {
-  const res = await fetch('/api/grammar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
-  if (!res.ok) {
-    const { error } = await res.json().catch(() => ({ error: 'Ошибка сервера' }));
-    throw new Error(error ?? 'Ошибка сервера');
-  }
-  const { corrected } = await res.json();
-  return corrected as string;
-}
 
 interface Props {
   document: DiaryEntry | null;
@@ -60,7 +47,7 @@ export const DocumentPreview: React.FC<Props> = ({ document, onUpdate }) => {
     setIsFixing(true);
     const source = isEditing ? editContent : document.content;
     try {
-      const corrected = await fixGrammar(source);
+      const corrected = await fixGrammarText(source);
       if (isEditing) {
         setEditContent(corrected);
       } else {

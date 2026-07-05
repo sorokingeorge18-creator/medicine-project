@@ -60,6 +60,10 @@ function wordToPrep(word: string): string {
   if (word.endsWith('на')) return word.slice(0, -1) + 'е';    // шина→шине
   if (word.endsWith('а'))  return word.slice(0, -1) + 'е';    // общее: шина,рука → ...е
 
+  // Уменьшительные на -жок/-чок — беглая гласная (сапожок→сапожке, крючок→крючке)
+  if (word.length > 3 && (word.endsWith('жок') || word.endsWith('чок')))
+    return word.slice(0, -2) + 'ке';
+
   // Существительные мужского рода на согласную
   if (/[бвгджзклмнпрстфхцчшщ]$/i.test(word)) return word + 'е'; // гипс→гипсе, ортез→ортезе
 
@@ -70,7 +74,7 @@ function wordToPrep(word: string): string {
  * Переводит фразу из именительного падежа в предложный.
  * Пример: «задняя гипсовая лонгета» → «задней гипсовой лонгете»
  */
-function toPrep(phrase: string): string {
+export function toPrep(phrase: string): string {
   return phrase.trim().split(/\s+/).map(wordToPrep).join(' ');
 }
 
@@ -81,7 +85,7 @@ function toPrep(phrase: string): string {
  * Инициалы не изменяются.
  * Пример: «Привалов Д.А.» → «Приваловым Д.А.»
  */
-function surnameInstrumental(fullName: string): string {
+export function surnameInstrumental(fullName: string): string {
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 0) return fullName;
   const s = parts[0];

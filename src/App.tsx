@@ -10,6 +10,7 @@ import { DocumentList } from './components/DocumentList';
 import { DocumentPreview } from './components/DocumentPreview';
 import { SavedCases } from './components/SavedCases';
 import { generateAllDocuments } from './logic/documentGenerator';
+import { fixGrammarText } from './logic/grammarApi';
 
 // ─── Начальные данные ────────────────────────────────────────────────────────
 
@@ -219,6 +220,7 @@ export default function App() {
   const [showErrors, setShowErrors] = useState(false);
   const [savedCases, setSavedCases] = useState<SavedCase[]>(loadCases);
   const [genKey, setGenKey] = useState(0);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
   const [showSavedCases, setShowSavedCases] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -280,6 +282,32 @@ export default function App() {
     catch (e) { setErrors([String(e)]); setShowErrors(true); }
     finally { setIsExporting(false); }
   }, [formData, diaries, preopEpicrisis]);
+
+  const handleFixAllGrammar = useCallback(async () => {
+    const docs: DiaryEntry[] = [...(preopEpicrisis ? [preopEpicrisis] : []), ...diaries];
+    if (docs.length === 0 || batchProgress) return;
+    setBatchProgress({ done: 0, total: docs.length });
+    try {
+      for (let i = 0; i < docs.length; i++) {
+        const doc = docs[i];
+        const corrected = await fixGrammarText(doc.content);
+        if (corrected !== doc.content) {
+          if (doc.type === 'preop') {
+            setPreopEpicrisis((prev) => (prev ? { ...prev, content: corrected, isEdited: true } : prev));
+          } else {
+            setDiaries((prev) => prev.map((d) => (d.id === doc.id ? { ...d, content: corrected, isEdited: true } : d)));
+          }
+        }
+        setBatchProgress({ done: i + 1, total: docs.length });
+      }
+      showSuccessMsg('Грамматика проверена во всех документах');
+    } catch (e) {
+      setErrors([`Проверка грамматики прервана: ${e instanceof Error ? e.message : String(e)}`]);
+      setShowErrors(true);
+    } finally {
+      setBatchProgress(null);
+    }
+  }, [diaries, preopEpicrisis, batchProgress]);
 
   const handleSaveCase = useCallback((name: string) => {
     const nc: SavedCase = { id: Date.now().toString(), name, savedAt: new Date().toISOString(), formData };
@@ -544,6 +572,34 @@ export default function App() {
                   </button>
                 )}
               </div>
+              {hasDocuments && (
+                <div className="px-3 pt-3">
+                  <button
+                    onClick={handleFixAllGrammar}
+                    disabled={batchProgress !== null}
+                    className="btn btn-sm btn-brand-soft w-full"
+                    title="Исправить грамматику во всех документах с помощью ИИ"
+                  >
+                    {batchProgress ? (
+                      <>
+                        <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 16 16" fill="none">
+                          <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" className="opacity-20"/>
+                          <path d="M14 8a6 6 0 00-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        Исправляю {batchProgress.done}/{batchProgress.total}…
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5">
+                          <path d="M2 8h2M12 8h2M8 2v2M8 12v2M4.1 4.1l1.4 1.4M10.5 10.5l1.4 1.4M4.1 11.9l1.4-1.4M10.5 5.5l1.4-1.4" strokeLinecap="round"/>
+                          <circle cx="8" cy="8" r="2.5"/>
+                        </svg>
+                        Грамматика — все
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
               <div className="px-3 py-3 flex-1 overflow-y-auto">
                 <DocumentList
                   key={genKey}
